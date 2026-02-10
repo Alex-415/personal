@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Scanner - Image to PDF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; margin-bottom: 2rem; padding-top: 2rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header p { color: rgba(255,255,255,0.9); font-size: 1.1rem; }
+        .info-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .info-section h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+        .info-section ul { margin-left: 1.5rem; margin-top: 0.5rem; }
+        .info-section li { margin-bottom: 0.5rem; line-height: 1.6; }
+        .upload-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+        }
+        .upload-section h2 { color: #059669; margin-bottom: 1rem; }
+        .upload-area {
+            border: 3px dashed #10b981;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f0fdf4;
+        }
+        .upload-area:hover { background: #dcfce7; border-color: #059669; }
+        .upload-area.dragover { background: #bbf7d0; border-color: #047857; }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; color: #10b981; }
+        .file-input { display: none; }
+        .mode-selector {
+            margin: 1.5rem 0;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #10b981;
+            background: white;
+            color: #10b981;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .mode-btn:hover { background: #f0fdf4; }
+        .mode-btn.active { background: #10b981; color: white; }
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: move;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .preview-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .control-btn {
+            background: white;
+            border: none;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .action-btn {
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .action-btn:disabled { background: #999; cursor: not-allowed; transform: none; }
+        .action-btn.secondary {
+            background: #6b7280;
+            margin-left: 1rem;
+        }
+        .controls-section {
+            background: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            color: #374151;
+        }
+        .controls-section h3 {
+            color: #059669;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .slider-group {
+            margin-bottom: 1rem;
+        }
+        .slider-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #d1d5db;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            border: none;
+        }
+        .select-group {
+            margin-bottom: 1rem;
+        }
+        .select-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .select-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: white;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            text-align: center;
+        }
+        .home-btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            background: white;
+            color: #059669;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .home-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Document Scanner</h1>
+            <p>Convert images to professional scanned PDFs</p>
+        </header>
+
+        <div class="info-section">
+            <h2>What This Tool Does</h2>
+            <p>Upload images and convert them into a single multi-page PDF with scanner-style enhancements.</p>
+            <ul>
+                <li><strong>Multiple Images:</strong> Upload multiple photos and combine into one PDF</li>
+                <li><strong>Enhancement Modes:</strong> Color, Grayscale, or Black & White</li>
+                <li><strong>Auto Processing:</strong> Automatic contrast and sharpening</li>
+                <li><strong>Instant Download:</strong> Generate and download PDF in seconds</li>
+            </ul>
+        </div>
+
+        <div class="upload-section">
+            <h2>Upload Images</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p><strong>Click to upload</strong> or drag and drop</p>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">JPG, PNG (multiple files supported)</p>
+            </div>
+            <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="color">Color</button>
+                <button class="mode-btn" data-mode="grayscale">Grayscale</button>
+                <button class="mode-btn" data-mode="bw">Black & White</button>
+            </div>
+
+            <div id="controlsSection" class="controls-section hidden">
+                <h3>Adjustments</h3>
+                <div class="slider-group">
+                    <label>Brightness: <span id="brightnessValue">0</span></label>
+                    <input type="range" id="brightnessSlider" class="slider" min="-100" max="100" value="0">
+                </div>
+                <div class="slider-group">
+                    <label>Contrast: <span id="contrastValue">0</span></label>
+                    <input type="range" id="contrastSlider" class="slider" min="-100" max="100" value="0">
+                </div>
+                <div class="slider-group">
+                    <label>Quality: <span id="qualityValue">90</span>%</label>
+                    <input type="range" id="qualitySlider" class="slider" min="50" max="100" value="90">
+                </div>
+                <div class="select-group">
+                    <label>Page Size:</label>
+                    <select id="pageSizeSelect">
+                        <option value="a4">A4 (210 × 297 mm)</option>
+                        <option value="letter">Letter (8.5 × 11 in)</option>
+                        <option value="legal">Legal (8.5 × 14 in)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="previewGrid" class="preview-grid hidden"></div>
+
+            <div id="actionButtons" class="hidden">
+                <button id="generateBtn" class="action-btn">Scan & Download PDF</button>
+                <button id="clearBtn" class="action-btn secondary">Clear All</button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Built by Al A | Demo project showcasing image processing and PDF generation</p>
+            <a href="index.html" class="home-btn">← Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        let uploadedFiles = [];
+        let selectedMode = 'color';
+        let brightness = 0;
+        let contrast = 0;
+        let quality = 0.9;
+        let pageSize = 'a4';
+        let rotations = {};
+        let draggedIndex = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewGrid = document.getElementById('previewGrid');
+        const generateBtn = document.getElementById('generateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const actionButtons = document.getElementById('actionButtons');
+        const controlsSection = document.getElementById('controlsSection');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+
+        // Sliders
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFiles);
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles({ target: { files: e.dataTransfer.files } });
+        });
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedMode = btn.dataset.mode;
+            });
+        });
+
+        brightnessSlider.addEventListener('input', (e) => {
+            brightness = parseInt(e.target.value);
+            document.getElementById('brightnessValue').textContent = brightness;
+        });
+
+        contrastSlider.addEventListener('input', (e) => {
+            contrast = parseInt(e.target.value);
+            document.getElementById('contrastValue').textContent = contrast;
+        });
+
+        qualitySlider.addEventListener('input', (e) => {
+            quality = parseInt(e.target.value) / 100;
+            document.getElementById('qualityValue').textContent = e.target.value;
+        });
+
+        pageSizeSelect.addEventListener('change', (e) => {
+            pageSize = e.target.value;
+        });
+
+        clearBtn.addEventListener('click', () => {
+            uploadedFiles = [];
+            rotations = {};
+            displayPreviews();
+        });
+
+        function handleFiles(e) {
+            const files = Array.from(e.target.files);
+            uploadedFiles = uploadedFiles.concat(files);
+            displayPreviews();
+        }
+
+        function displayPreviews() {
+            previewGrid.innerHTML = '';
+            if (uploadedFiles.length === 0) {
+                previewGrid.classList.add('hidden');
+                actionButtons.classList.add('hidden');
+                controlsSection.classList.add('hidden');
+                return;
+            }
+
+            previewGrid.classList.remove('hidden');
+            actionButtons.classList.remove('hidden');
+            controlsSection.classList.remove('hidden');
+
+            uploadedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const div = document.createElement('div');
+                    div.className = 'preview-item';
+                    div.draggable = true;
+                    div.dataset.index = index;
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview" style="transform: rotate(${rotations[index] || 0}deg);">
+                        <button class="remove-btn" onclick="removeFile(${index})">×</button>
+                        <div class="preview-controls">
+                            <button class="control-btn" onclick="rotateImage(${index})" title="Rotate">↻</button>
+                        </div>
+                    `;
+                    
+                    div.addEventListener('dragstart', handleDragStart);
+                    div.addEventListener('dragover', handleDragOver);
+                    div.addEventListener('drop', handleDrop);
+                    div.addEventListener('dragend', handleDragEnd);
+                    
+                    previewGrid.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.target.dataset.index);
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropIndex = parseInt(e.currentTarget.dataset.index);
+            if (draggedIndex !== dropIndex) {
+                const draggedFile = uploadedFiles[draggedIndex];
+                uploadedFiles.splice(draggedIndex, 1);
+                uploadedFiles.splice(dropIndex, 0, draggedFile);
+                
+                const draggedRotation = rotations[draggedIndex] || 0;
+                delete rotations[draggedIndex];
+                const newRotations = {};
+                Object.keys(rotations).forEach(key => {
+                    const k = parseInt(key);
+                    if (k < draggedIndex && k < dropIndex) newRotations[k] = rotations[k];
+                    else if (k > draggedIndex && k > dropIndex) newRotations[k] = rotations[k];
+                    else if (k < draggedIndex && k >= dropIndex) newRotations[k + 1] = rotations[k];
+                    else if (k > draggedIndex && k <= dropIndex) newRotations[k - 1] = rotations[k];
+                });
+                newRotations[dropIndex] = draggedRotation;
+                rotations = newRotations;
+                
+                displayPreviews();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+        }
+
+        function rotateImage(index) {
+            rotations[index] = ((rotations[index] || 0) + 90) % 360;
+            displayPreviews();
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            displayPreviews();
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            if (uploadedFiles.length === 0) return;
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating PDF...';
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                let isFirstPage = true;
+
+                for (const [index, file] of uploadedFiles.entries()) {
+                    const img = await loadImage(file);
+                    const canvas = processImage(img, selectedMode, rotations[index] || 0);
+                    const imgData = canvas.toDataURL('image/jpeg', quality);
+
+                    if (!isFirstPage) {
+                        pdf.addPage();
+                    }
+                    isFirstPage = false;
+
+                    const sizes = {
+                        a4: { width: 210, height: 297 },
+                        letter: { width: 215.9, height: 279.4 },
+                        legal: { width: 215.9, height: 355.6 }
+                    };
+                    const size = sizes[pageSize];
+                    const pdfWidth = size.width;
+                    const pdfHeight = size.height;
+                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                }
+
+                pdf.save('scanned-document.pdf');
+            } catch (error) {
+                alert('Error generating PDF: ' + error.message);
+            }
+
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Scan & Download PDF';
+        });
+
+        function loadImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function processImage(img, mode, rotation) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Handle rotation
+            if (rotation === 90 || rotation === 270) {
+                canvas.width = img.height;
+                canvas.height = img.width;
+            } else {
+                canvas.width = img.width;
+                canvas.height = img.height;
+            }
+
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            ctx.restore();
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+
+                // Apply brightness
+                r += brightness;
+                g += brightness;
+                b += brightness;
+
+                // Apply contrast
+                const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+                r = factor * (r - 128) + 128;
+                g = factor * (g - 128) + 128;
+                b = factor * (b - 128) + 128;
+
+                // Clamp values
+                r = Math.max(0, Math.min(255, r));
+                g = Math.max(0, Math.min(255, g));
+                b = Math.max(0, Math.min(255, b));
+
+                if (mode === 'grayscale') {
+                    const gray = r * 0.299 + g * 0.587 + b * 0.114;
+                    data[i] = data[i + 1] = data[i + 2] = gray;
+                } else if (mode === 'bw') {
+                    const gray = r * 0.299 + g * 0.587 + b * 0.114;
+                    const bw = gray > 128 ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = bw;
+                } else {
+                    data[i] = r;
+                    data[i + 1] = g;
+                    data[i + 2] = b;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return canvas;
+        }
+    </script>
+</body>
+</html>
