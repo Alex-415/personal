@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Unit Tests for Portfolio Website</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #2d3748;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .test-pass {
+            background-color: #c6f6d5;
+            border-left: 4px solid #48bb78;
+        }
+        .test-fail {
+            background-color: #fed7d7;
+            border-left: 4px solid #e53e3e;
+        }
+        .test-summary {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <div class=\"test-container\">
+        <h1>Unit Tests for Portfolio Website</h1>
+        <p>This page runs unit tests for the JavaScript functionality of the portfolio website.</p>
+        
+        <div class=\"test-controls\">
+            <button id=\"runAllTests\">Run All Tests</button>
+            <button id=\"runMobileNavTests\">Mobile Navigation Tests</button>
+            <button id=\"runSmoothScrollTests\">Smooth Scrolling Tests</button>
+            <button id=\"runIntersectionTests\">Intersection Observer Tests</button>
+        </div>
+        
+        <div class=\"test-summary\" id=\"testSummary\">
+            Test results will appear here...
+        </div>
+        
+        <div id=\"testResults\"></div>
+    </div>
+
+    <script>
+        // The actual portfolio website script
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile navigation toggle
+            const navToggle = document.getElementById('navToggle');
+            const navLinks = document.getElementById('navLinks');
+
+            if (navToggle && navLinks) {
+                navToggle.addEventListener('click', () => {
+                    navToggle.classList.toggle('active');
+                    navLinks.classList.toggle('active');
+                });
+
+                // Close menu when clicking a link
+                navLinks.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        navToggle.classList.remove('active');
+                        navLinks.classList.remove('active');
+                    });
+                });
+            }
+
+            // Smooth scroll for navigation links
+            document.querySelectorAll('a[href^=\"#\"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        const navHeight = document.querySelector('.nav').offsetHeight;
+                        const targetPosition = targetElement.offsetTop - navHeight - 20;
+                        
+                        window.scrollTo({
+                            top: targetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            // Fade-in animation on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe elements for animation
+            const animatedElements = document.querySelectorAll('.project-card, .skill-group');
+            animatedElements.forEach((element, index) => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                element.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+                observer.observe(element);
+            });
+        });
+
+        // Mock DOM elements for testing
+        function createMockDOM() {
+            document.body.innerHTML = `
+                <nav class=\"nav\">
+                    <div class=\"nav-container\">
+                        <a href=\"#\" class=\"nav-logo\">Al A</a>
+                        <button class=\"nav-toggle\" id=\"navToggle\" aria-label=\"Toggle navigation\">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                        <div class=\"nav-links\" id=\"navLinks\">
+                            <a href=\"#projects\">Projects</a>
+                            <a href=\"#contact\" class=\"nav-cta\">Contact</a>
+                        </div>
+                    </div>
+                </nav>
+
+                <main>
+                    <section class=\"hero\">
+                        <div class=\"container\">
+                            <h1 class=\"hero-title\">Cloud-Native Developer specializing in serverless architectures</h1>
+                            <p class=\"hero-subtitle\">Building scalable...</p>
+                            <div class=\"hero-actions\">
+                                <a href=\"#contact\" class=\"btn-primary\">Get in touch</a>
+                                <a href=\"#projects\" class=\"btn-secondary\">View projects</a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id=\"projects\" class=\"section section-alt\">
+                        <div class=\"container\">
+                            <h2 class=\"section-title\">Projects</h2>
+                            <div class=\"projects-grid\">
+                                <div class=\"project-card\">
+                                    <h3>AWS Serverless Architecture</h3>
+                                    <p>Built cloud-native applications...</p>
+                                </div>
+                                <div class=\"project-card\">
+                                    <h3>Modern Web Applications</h3>
+                                    <p>Engineered high-performance...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class=\"section\">
+                        <div class=\"container\">
+                            <h2 class=\"section-title\">Skills</h2>
+                            <div class=\"skills-container\">
+                                <div class=\"skill-group\">
+                                    <h3 class=\"skill-group-title\">Frontend</h3>
+                                    <div class=\"skill-tags\">
+                                        <span>React</span>
+                                        <span>TypeScript</span>
+                                    </div>
+                                </div>
+                                <div class=\"skill-group\">
+                                    <h3 class=\"skill-group-title\">Backend</h3>
+                                    <div class=\"skill-tags\">
+                                        <span>Node.js</span>
+                                        <span>Python</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id=\"contact\" class=\"section section-alt\">
+                        <div class=\"container\">
+                            <div class=\"contact-content\">
+                                <h2 class=\"contact-title\">Let's work together</h2>
+                                <p class=\"contact-text\">I'm currently open to new opportunities...</p>
+                                <div class=\"contact-links\">
+                                    <a href=\"mailto:al.software.ca@gmail.com\" class=\"contact-link\">al.software.ca@gmail.com</a>
+                                    <a href=\"https://www.linkedin.com/in/al-software\" class=\"contact-link\">LinkedIn</a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            `;
+        }
+
+        // Capture console output for display
+        const originalLog = console.log;
+        const originalAssert = console.assert;
+        const testResults = [];
+
+        console.log = function(...args) {
+            testResults.push({type: 'log', message: args.join(' ')});
+            originalLog.apply(console, args);
+        };
+
+        console.assert = function(condition, message) {
+            if (!condition) {
+                testResults.push({type: 'fail', message: message || 'Assertion failed'});
+                originalLog.apply(console, ['✗', message || 'Assertion failed']);
+            } else {
+                testResults.push({type: 'pass', message: message || 'Assertion passed'});
+                originalLog.apply(console, ['✓', message || 'Assertion passed']);
+            }
+        };
+
+        // Test suite functions
+        function testMobileNavigation() {
+            createMockDOM();
+            testResults.length = 0; // Clear previous results
+            originalLog('Testing Mobile Navigation...');
+            
+            const navToggle = document.getElementById('navToggle');
+            const navLinks = document.getElementById('navLinks');
+            
+            // Initial state: classes should not be active
+            console.assert(!navToggle.classList.contains('active'), 'navToggle should not have active class initially');
+            console.assert(!navLinks.classList.contains('active'), 'navLinks should not have active class initially');
+            
+            // Simulate click on toggle
+            navToggle.click();
+            
+            // After click: both should have active class
+            console.assert(navToggle.classList.contains('active'), 'navToggle should have active class after click');
+            console.assert(navLinks.classList.contains('active'), 'navLinks should have active class after click');
+            
+            // Click again: should remove active class
+            navToggle.click();
+            console.assert(!navToggle.classList.contains('active'), 'navToggle should not have active class after second click');
+            console.assert(!navLinks.classList.contains('active'), 'navLinks should not have active class after second click');
+            
+            originalLog('✓ Mobile Navigation tests completed');
+            return testResults.filter(r => r.type === 'fail').length === 0;
+        }
+
+        function testSmoothScrolling() {
+            createMockDOM();
+            testResults.length = 0; // Clear previous results
+            originalLog('Testing Smooth Scrolling...');
+            
+            const projectsSection = document.getElementById('projects');
+            const contactSection = document.getElementById('contact');
+            
+            // Mock the getBoundingClientRect method
+            HTMLDivElement.prototype.getBoundingClientRect = function() {
+                return {
+                    top: this.offsetTop,
+                    height: 400
+                };
+            };
+            
+            // Mock offsetTop values
+            Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+                get: function() {
+                    if (this.id === 'projects') return 1000;
+                    if (this.id === 'contact') return 1500;
+                    return 0;
+                }
+            });
+            
+            // Mock offsetHeight for nav
+            const navElement = document.querySelector('.nav');
+            Object.defineProperty(navElement, 'offsetHeight', {
+                get: function() { return 80; }
+            });
+            
+            // Simulate DOMContentLoaded event to initialize the script
+            document.dispatchEvent(new Event('DOMContentLoaded'));
+            
+            // Find anchor links
+            const projectLink = document.querySelector('a[href=\"#projects\"]');
+            const contactLink = document.querySelector('a[href=\"#contact\"]');
+            
+            // Mock the scrollIntoView method
+            let scrollCalled = false;
+            let scrollPosition = null;
+            
+            // Replace window.scrollTo to test if it's called properly
+            const originalScrollTo = window.scrollTo;
+            window.scrollTo = function(options) {
+                scrollCalled = true;
+                scrollPosition = options.top;
+            };
+            
+            // Simulate clicking on a navigation link
+            projectLink.click();
+            
+            // Check if scrollTo was called
+            console.assert(scrollCalled, 'window.scrollTo should be called when clicking navigation link');
+            
+            // Restore original scrollTo
+            window.scrollTo = originalScrollTo;
+            
+            originalLog('✓ Smooth Scrolling tests completed');
+            return testResults.filter(r => r.type === 'fail').length === 0;
+        }
+
+        function testIntersectionObserver() {
+            createMockDOM();
+            testResults.length = 0; // Clear previous results
+            originalLog('Testing Intersection Observer Animation...');
+            
+            // Get project cards and skill groups
+            const projectCards = document.querySelectorAll('.project-card');
+            const skillGroups = document.querySelectorAll('.skill-group');
+            
+            // Initially, elements should have 0 opacity and translateY(20px)
+            projectCards.forEach(card => {
+                console.assert(card.style.opacity === '0', 'Project card should have opacity 0 initially');
+                console.assert(card.style.transform === 'translateY(20px)', 'Project card should have translateY(20px) initially');
+            });
+            
+            skillGroups.forEach(group => {
+                console.assert(group.style.opacity === '0', 'Skill group should have opacity 0 initially');
+                console.assert(group.style.transform === 'translateY(20px)', 'Skill group should have translateY(20px) initially');
+            });
+            
+            originalLog('✓ Intersection Observer tests completed');
+            return testResults.filter(r => r.type === 'fail').length === 0;
+        }
+
+        function testDOMElementsExist() {
+            createMockDOM();
+            testResults.length = 0; // Clear previous results
+            originalLog('Testing DOM Elements Existence...');
+            
+            // Check if required elements exist
+            console.assert(document.getElementById('navToggle') !== null, 'navToggle element exists');
+            console.assert(document.getElementById('navLinks') !== null, 'navLinks element exists');
+            console.assert(document.querySelectorAll('.project-card').length > 0, 'Project cards exist');
+            console.assert(document.querySelectorAll('.skill-group').length > 0, 'Skill groups exist');
+            
+            originalLog('✓ DOM Elements Existence tests completed');
+            return testResults.filter(r => r.type === 'fail').length === 0;
+        }
+
+        function displayResults(testName, results) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultsHtml = results.map(r => {
+                const cssClass = r.type === 'pass' ? 'test-pass' : 'test-fail';
+                return `<div class=\"test-result ${cssClass}\">${r.message}</div>`;
+            }).join('');
+            
+            resultsDiv.innerHTML += `<h3>${testName}</h3>${resultsHtml}`;
+        }
+
+        function runAllTests() {
+            document.getElementById('testResults').innerHTML = '';
+            testResults.length = 0;
+            
+            const results = [];
+            
+            try {
+                results.push({name: 'DOM Elements Existence', passed: testDOMElementsExist()});
+                results.push({name: 'Mobile Navigation', passed: testMobileNavigation()});
+                results.push({name: 'Smooth Scrolling', passed: testSmoothScrolling()});
+                results.push({name: 'Intersection Observer', passed: testIntersectionObserver()});
+                
+                const passedTests = results.filter(r => r.passed).length;
+                const totalTests = results.length;
+                
+                document.getElementById('testSummary').innerHTML = 
+                    `<strong>Test Summary: ${passedTests}/${totalTests} tests passed</strong>`;
+                
+                // Reload the original page
+                window.location.reload();
+            } catch (error) {
+                document.getElementById('testSummary').innerHTML = 
+                    `<strong>Error running tests: ${error.message}</strong>`;
+            }
+        }
+
+        // Add event listeners to buttons
+        document.getElementById('runAllTests').addEventListener('click', runAllTests);
+        document.getElementById('runMobileNavTests').addEventListener('click', () => {
+            document.getElementById('testResults').innerHTML = '';
+            testMobileNavigation();
+            // Reload the original page
+            window.location.reload();
+        });
+        document.getElementById('runSmoothScrollTests').addEventListener('click', () => {
+            document.getElementById('testResults').innerHTML = '';
+            testSmoothScrolling();
+            // Reload the original page
+            window.location.reload();
+        });
+        document.getElementById('runIntersectionTests').addEventListener('click', () => {
+            document.getElementById('testResults').innerHTML = '';
+            testIntersectionObserver();
+            // Reload the original page
+            window.location.reload();
+        });
+    </script>
+</body>
+</html>

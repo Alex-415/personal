@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Assisted SEO Snapshot Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.6; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container { 
+            min-height: 100vh; 
+            padding: 2rem; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 3rem; 
+            padding-top: 2rem;
+        }
+        .header h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 0.5rem; 
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .header p { 
+            color: rgba(255,255,255,0.9); 
+            font-size: 1.1rem;
+        }
+        .main { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 1.5rem; 
+        }
+        .input-group { 
+            display: flex; 
+            gap: 0.75rem; 
+            background: white;
+            padding: 0.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .url-input { 
+            flex: 1; 
+            padding: 1rem; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 15px;
+            color: #333;
+            transition: border 0.3s;
+        }
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button { 
+            padding: 1rem 2.5rem; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: 600;
+            cursor: pointer; 
+            white-space: nowrap;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .button:disabled { 
+            background: #999; 
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error { 
+            padding: 1rem; 
+            background: rgba(255,255,255,0.95); 
+            border-left: 4px solid #ef4444; 
+            border-radius: 8px; 
+            color: #dc2626;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .results { 
+            margin-top: 1rem; 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem; 
+        }
+        .section { 
+            padding: 2rem; 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 12px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .section:hover {
+            transform: translateY(-4px);
+        }
+        .section.full-width {
+            grid-column: 1 / -1;
+        }
+        .section h2 { 
+            font-size: 1.4rem; 
+            margin-bottom: 1rem;
+            color: #667eea;
+            font-weight: 700;
+        }
+        .strength-list, .quick-wins { 
+            list-style: none; 
+            padding: 0; 
+        }
+        .strength-list li, .quick-wins li { 
+            padding: 0.75rem 0; 
+            padding-left: 2rem; 
+            position: relative;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .strength-list li:last-child, .quick-wins li:last-child {
+            border-bottom: none;
+        }
+        .strength-list li:before { 
+            content: "✓"; 
+            position: absolute; 
+            left: 0; 
+            color: #22c55e; 
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .quick-wins li:before { 
+            content: "→"; 
+            position: absolute; 
+            left: 0; 
+            color: #667eea; 
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .issue-list { 
+            list-style: none; 
+            padding: 0; 
+        }
+        .issue-list li { 
+            padding: 1rem; 
+            margin-bottom: 0.75rem; 
+            border-radius: 8px; 
+            border-left: 4px solid;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .high { 
+            background: #fef2f2; 
+            border-color: #ef4444; 
+        }
+        .medium { 
+            background: #fffbeb; 
+            border-color: #f59e0b; 
+        }
+        .low { 
+            background: #eff6ff; 
+            border-color: #3b82f6; 
+        }
+        .severity { 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            font-size: 0.7rem; 
+            margin-right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.1);
+        }
+        .issue-why { 
+            font-size: 0.9rem; 
+            color: #666; 
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        .footer { 
+            margin-top: 3rem; 
+            padding: 1.5rem; 
+            background: rgba(255,255,255,0.2); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3); 
+            border-radius: 12px; 
+            text-align: center;
+            color: white;
+            font-weight: 500;
+        }
+        .home-btn { 
+            display: inline-block; 
+            margin-top: 1rem; 
+            padding: 0.75rem 2rem; 
+            background: white; 
+            color: #667eea; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .home-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .hidden { 
+            display: none; 
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .input-group { flex-direction: column; }
+            .results { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI-Assisted SEO Snapshot Scanner</h1>
+            <p>Analyze on-page SEO signals for a single URL</p>
+        </header>
+
+        <main class="main">
+            <div class="input-group">
+                <input type="url" id="urlInput" class="url-input" placeholder="https://example.com" />
+                <button class="button" onclick="analyzeSEO()">Analyze SEO</button>
+            </div>
+            <div id="error" class="error hidden"></div>
+            <div id="results" class="results hidden"></div>
+        </main>
+
+        <footer class="footer">
+            <p>Built by Al A | Demo project showcasing AI integration and web scraping capabilities</p>
+            <a href="index.html" class="home-btn">← Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        async function analyzeSEO() {
+            const url = document.getElementById('urlInput').value;
+            const errorDiv = document.getElementById('error');
+            const resultsDiv = document.getElementById('results');
+
+            errorDiv.classList.add('hidden');
+            resultsDiv.classList.add('hidden');
+
+            if (!url.trim()) {
+                errorDiv.textContent = 'Please enter a URL to analyze';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                errorDiv.textContent = 'URL must start with http:// or https://';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Mock analysis (in production, this would call a backend API)
+            const analysis = mockSEOAnalysis(url);
+            displayResults(analysis);
+        }
+
+        function mockSEOAnalysis(url) {
+            // This is a MOCK. In production, backend would fetch and parse HTML
+            const isHttps = url.startsWith('https://');
+            
+            return {
+                summary: `Basic SEO snapshot for ${url}. This is a mock analysis - in production, the backend would fetch and parse the actual HTML.`,
+                strengths: [
+                    isHttps ? 'Using HTTPS (secure connection)' : null,
+                    'URL structure appears clean'
+                ].filter(Boolean),
+                issues: [
+                    !isHttps ? {
+                        severity: 'high',
+                        description: 'Not using HTTPS',
+                        why_it_matters: 'Search engines prefer secure sites. Users may see security warnings.'
+                    } : null,
+                    {
+                        severity: 'medium',
+                        description: 'Unable to verify title tag (mock mode)',
+                        why_it_matters: 'Title tags are critical for search rankings and click-through rates.'
+                    },
+                    {
+                        severity: 'low',
+                        description: 'Meta description not verified (mock mode)',
+                        why_it_matters: 'Meta descriptions influence click-through rates from search results.'
+                    }
+                ].filter(Boolean),
+                quick_wins: [
+                    'Ensure title tag is 50-60 characters',
+                    'Add descriptive meta description (150-160 characters)',
+                    'Verify all images have alt text',
+                    'Check that H1 tag matches page topic'
+                ]
+            };
+        }
+
+        function displayResults(analysis) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="section full-width">
+                    <h2>Summary</h2>
+                    <p>${analysis.summary}</p>
+                </div>
+            `;
+
+            if (analysis.strengths.length > 0) {
+                html += `
+                    <div class="section">
+                        <h2>Strengths</h2>
+                        <ul class="strength-list">
+                            ${analysis.strengths.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (analysis.issues.length > 0) {
+                html += `
+                    <div class="section">
+                        <h2>Issues</h2>
+                        <ul class="issue-list">
+                            ${analysis.issues.map(issue => `
+                                <li class="${issue.severity}">
+                                    <div><span class="severity">${issue.severity}</span>${issue.description}</div>
+                                    <div class="issue-why">${issue.why_it_matters}</div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (analysis.quick_wins.length > 0) {
+                html += `
+                    <div class="section">
+                        <h2>Quick Wins</h2>
+                        <ul class="quick-wins">
+                            ${analysis.quick_wins.map(w => `<li>${w}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

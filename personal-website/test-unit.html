@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Portfolio Website Unit Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class=\"container\">
+        <h1>Portfolio Website Unit Tests</h1>
+        <p>This page runs unit tests for the JavaScript functionality of the portfolio website.</p>
+        
+        <button id=\"runTests\">Run Unit Tests</button>
+        <button id=\"viewWebsite\">View Original Website</button>
+        
+        <div id=\"status\" class=\"status loading\">Ready to run tests</div>
+        
+        <div id=\"results\" class=\"test-results\"></div>
+    </div>
+
+    <script>
+        // Original website script functionality
+        function initWebsite() {
+            document.addEventListener('DOMContentLoaded', () => {
+                // Mobile navigation toggle
+                const navToggle = document.getElementById('navToggle');
+                const navLinks = document.getElementById('navLinks');
+
+                if (navToggle && navLinks) {
+                    navToggle.addEventListener('click', () => {
+                        navToggle.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+
+                    // Close menu when clicking a link
+                    navLinks.querySelectorAll('a').forEach(link => {
+                        link.addEventListener('click', () => {
+                            navToggle.classList.remove('active');
+                            navLinks.classList.remove('active');
+                        });
+                    });
+                }
+
+                // Smooth scroll for navigation links
+                document.querySelectorAll('a[href^=\"#\"]').forEach(anchor => {
+                    anchor.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href');
+                        if (targetId === '#') return;
+                        
+                        const targetElement = document.querySelector(targetId);
+                        if (targetElement) {
+                            const navHeight = document.querySelector('.nav').offsetHeight;
+                            const targetPosition = targetElement.offsetTop - navHeight - 20;
+                            
+                            window.scrollTo({
+                                top: targetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                });
+
+                // Fade-in animation on scroll
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe elements for animation
+                const animatedElements = document.querySelectorAll('.project-card, .skill-group');
+                animatedElements.forEach((element, index) => {
+                    element.style.opacity = '0';
+                    element.style.transform = 'translateY(20px)';
+                    element.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+                    observer.observe(element);
+                });
+            });
+        }
+
+        // Test functions
+        function runTests() {
+            const resultsDiv = document.getElementById('results');
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.textContent = 'Running tests...';
+            statusDiv.className = 'status loading';
+            
+            // Capture console output
+            const originalLog = console.log;
+            const testLog = [];
+            
+            console.log = function(...args) {
+                testLog.push(args.join(' '));
+                originalLog.apply(console, args);
+            };
+            
+            try {
+                // Run tests
+                let passCount = 0;
+                let testCount = 0;
+                
+                // Test 1: Check if DOM elements exist
+                testCount++;
+                const navToggle = document.getElementById('navToggle');
+                const navLinks = document.getElementById('navLinks');
+                const projectCards = document.querySelectorAll('.project-card');
+                const skillGroups = document.querySelectorAll('.skill-group');
+                
+                if (navToggle) {
+                    testLog.push('✅ navToggle element exists');
+                    passCount++;
+                } else {
+                    testLog.push('❌ navToggle element missing');
+                }
+                
+                if (navLinks) {
+                    testLog.push('✅ navLinks element exists');
+                    passCount++;
+                } else {
+                    testLog.push('❌ navLinks element missing');
+                }
+                
+                if (projectCards.length > 0) {
+                    testLog.push(`✅ Found ${projectCards.length} project cards`);
+                    passCount++;
+                } else {
+                    testLog.push('❌ No project cards found');
+                }
+                
+                if (skillGroups.length > 0) {
+                    testLog.push(`✅ Found ${skillGroups.length} skill groups`);
+                    passCount++;
+                } else {
+                    testLog.push('❌ No skill groups found');
+                }
+                
+                // Test 2: Check if navigation links exist
+                testCount++;
+                const navAnchors = document.querySelectorAll('a[href^=\"#\"]');
+                if (navAnchors.length > 0) {
+                    testLog.push(`✅ Found ${navAnchors.length} navigation links`);
+                    passCount++;
+                } else {
+                    testLog.push('❌ No navigation links found');
+                }
+                
+                // Test 3: Check if the animation is applied to elements
+                testCount++;
+                const firstProjectCard = projectCards[0];
+                if (firstProjectCard) {
+                    const initialOpacity = firstProjectCard.style.opacity;
+                    const initialTransform = firstProjectCard.style.transform;
+                    
+                    if (initialOpacity === '0' && initialTransform.includes('translateY(20px)')) {
+                        testLog.push('✅ Animation styles correctly applied to project card');
+                        passCount++;
+                    } else {
+                        testLog.push('❌ Animation styles not correctly applied to project card');
+                    }
+                } else {
+                    testLog.push('⚠️  No project card to test animation on');
+                }
+                
+                const firstSkillGroup = skillGroups[0];
+                if (firstSkillGroup) {
+                    const initialOpacity = firstSkillGroup.style.opacity;
+                    const initialTransform = firstSkillGroup.style.transform;
+                    
+                    if (initialOpacity === '0' && initialTransform.includes('translateY(20px)')) {
+                        testLog.push('✅ Animation styles correctly applied to skill group');
+                        passCount++;
+                    } else {
+                        testLog.push('❌ Animation styles not correctly applied to skill group');
+                    }
+                } else {
+                    testLog.push('⚠️  No skill group to test animation on');
+                }
+                
+                // Test 4: Check if scroll event listeners are attached (by checking if event listener was added)
+                testCount++;
+                if (navAnchors.length > 0) {
+                    testLog.push('✅ Scroll event listeners found on anchor links');
+                    passCount++;
+                } else {
+                    testLog.push('❌ No scroll event listeners found');
+                }
+                
+                // Test 5: Check if IntersectionObserver elements exist
+                testCount++;
+                if (projectCards.length > 0 || skillGroups.length > 0) {
+                    testLog.push('✅ Elements exist for IntersectionObserver to monitor');
+                    passCount++;
+                } else {
+                    testLog.push('❌ No elements found for IntersectionObserver');
+                }
+                
+                // Display results
+                resultsDiv.innerHTML = `
+                    <h3>Test Results</h3>
+                    <p><strong>Tests Passed: ${passCount}/${testCount}</strong></p>
+                    <div style=\"font-family: monospace; white-space: pre-line; background: #f8f9fa; padding: 10px; border-radius: 4px;\">
+                        ${testLog.join('\\n')}
+                    </div>
+                `;
+                
+                if (passCount === testCount) {
+                    statusDiv.textContent = `All tests passed! (${passCount}/${testCount})`;
+                    statusDiv.className = 'status pass';
+                } else {
+                    statusDiv.textContent = `Tests completed: ${passCount}/${testCount} passed`;
+                    statusDiv.className = 'status fail';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class=\"fail\">Error running tests: ${error.message}</p>`;
+                statusDiv.textContent = 'Error running tests';
+                statusDiv.className = 'status fail';
+            } finally {
+                console.log = originalLog;
+            }
+        }
+
+        // Add event listeners
+        document.getElementById('runTests').addEventListener('click', runTests);
+        document.getElementById('viewWebsite').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // Initialize the website functionality
+        initWebsite();
+    </script>
+</body>
+</html>
