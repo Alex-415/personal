@@ -1,35 +1,29 @@
 # Personal Portfolio Website
 
-Modern, minimalist portfolio website for a Cloud-Native Developer.
 
 ## Features
 
-- Clean, professional design inspired by modern tech companies
-- Fully responsive (mobile, tablet, desktop)
-- Smooth animations and interactions
-- Mobile hamburger navigation
-- Fast loading and optimized performance
+- Responsive design (mobile, tablet, desktop)
+- Smooth animations
+- Mobile hamburger menu
+- Fast loading
 
 ## Tech Stack
 
 - HTML5
-- CSS3 (Custom, no frameworks)
+- CSS3
 - Vanilla JavaScript
-- Inter font family
+- Inter font
 
 ## Local Development
 
-Simply open `personal-website/index.html` in your browser.
+Open `personal-website/index.html` in your browser.
 
 ## Deployment
 
-### Netlify (Recommended)
-1. Push to GitHub
-2. Connect repository to Netlify
-3. Deploy automatically
 
-### Manual Deploy
-Drag the `personal-website` folder to any static hosting service.
+
+
 
 ## Structure
 
@@ -39,6 +33,8 @@ personal-website/
 ├── projects.html           # Projects page
 ├── ai-scanner.html         # AI Cloud Config Risk Scanner
 ├── seo-scanner.html        # AI SEO Snapshot Scanner
+├── doc-scanner.html        # Document Scanner
+├── qr-generator.html       # QR Code Generator
 ├── css/
 │   └── style.css          # All styles
 ├── js/
@@ -49,17 +45,25 @@ personal-website/
 
 ## Projects
 
-### AI-Assisted Cloud Config Risk Scanner
-- Analyzes AWS configurations (IAM policies, S3, Terraform, CloudFormation)
-- Detects wildcard permissions, public access, hardcoded secrets
-- Provides severity-ranked security risks and recommendations
-- Tech: React, Node.js, LLM Integration
+### AI Cloud Config Risk Scanner
+Scans AWS configs for security issues. Catches wildcard permissions, public access, hardcoded secrets, and open CIDR ranges. Returns severity-ranked risks with fix recommendations.
 
-### AI-Assisted SEO Snapshot Scanner
-- Analyzes on-page SEO signals from a single URL
-- Extracts title tags, meta descriptions, H1 tags, image alt text
-- Uses LLM to interpret findings and prioritize fixes
-- Tech: React, Node.js, Cheerio
+Built with JavaScript, HTML5, CSS3
+
+### AI SEO Snapshot Scanner
+Analyzes on-page SEO from any URL. Pulls title tags, meta descriptions, H1s, and image alt text. Flags issues and suggests quick wins.
+
+Built with JavaScript, HTML5, CSS3
+
+### Document Scanner
+Turns photos into scanned PDFs. Supports color, grayscale, and B&W modes. Adjust brightness, contrast, quality. Drag to reorder pages, rotate images, pick page size (A4, Letter, Legal).
+
+Built with JavaScript, Canvas API, jsPDF
+
+### QR Code Generator
+Makes QR codes from text or URLs. Pick size and colors. Download as PNG or SVG. Live preview.
+
+Built with JavaScript, QRCode.js, Canvas API
 
 ## License
 
