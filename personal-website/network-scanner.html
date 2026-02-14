@@ -15,6 +15,12 @@
         .scan-btn { width: 100%; padding: 16px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
         .scan-btn:hover { background: #0052a3; }
         .scan-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .wake-btn { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+        .wake-btn:hover { background: #218838; }
+        .wake-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .wake-status { text-align: center; padding: 8px; margin-bottom: 16px; border-radius: 8px; font-size: 14px; }
+        .wake-success { background: #d4edda; color: #155724; }
+        .wake-error { background: #f8d7da; color: #721c24; }
         .results-container { margin-top: 32px; }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .summary-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
@@ -56,6 +62,9 @@
 
         <section class="section">
             <div class="scanner-container">
+                <button class="wake-btn" id="wakeBtn">Wake Up Server (Render.com)</button>
+                <div id="wakeStatus" style="display: none;"></div>
+                
                 <div class="input-group">
                     <label for="host">Target Host</label>
                     <input type="text" id="host" placeholder="example.com or IP address" value="scanme.nmap.org">
@@ -147,7 +156,34 @@
 
     <script src="js/script.js"></script>
     <script>
-        const API_URL = 'https://your-render-backend.onrender.com/scan';
+        const API_URL = 'https://network-scanner-2vdr.onrender.com/scan';
+        const HEALTH_URL = 'https://network-scanner-2vdr.onrender.com/health';
+
+        document.getElementById('wakeBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('wakeBtn');
+            const status = document.getElementById('wakeStatus');
+            
+            btn.disabled = true;
+            btn.textContent = 'Waking up server...';
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch(HEALTH_URL);
+                if (response.ok) {
+                    status.className = 'wake-status wake-success';
+                    status.textContent = '✓ Server is awake and ready!';
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                status.className = 'wake-status wake-error';
+                status.textContent = '✗ Failed to wake server. Try again.';
+            } finally {
+                status.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Wake Up Server (Render.com)';
+            }
+        });
 
         document.getElementById('scanBtn').addEventListener('click', async () => {
             const host = document.getElementById('host').value.trim();
