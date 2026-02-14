@@ -230,17 +230,20 @@ func round(val float64, precision int) float64 {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.RemoteAddr)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 }
 
 func (s *Simulator) servicesHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.RemoteAddr)
 	w.Header().Set("Content-Type", "application/json")
 	graph := s.getMetrics()
 	json.NewEncoder(w).Encode(graph)
 }
 
 func (s *Simulator) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.RemoteAddr)
 	graph := s.getMetrics()
 	
 	totalRequests := 0
@@ -282,6 +285,7 @@ func (s *Simulator) metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Simulator) simulateFailureHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.RemoteAddr)
 	var req FailureRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
