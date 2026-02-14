@@ -31,6 +31,7 @@ Open `personal-website/index.html` in your browser.
 personal-website/
 ├── index.html              # Main HTML file
 ├── projects.html           # Projects page
+├── network-scanner.html    # Network Inspection Platform
 ├── ai-scanner.html         # AI Cloud Config Risk Scanner
 ├── seo-scanner.html        # AI SEO Snapshot Scanner
 ├── doc-scanner.html        # Document Scanner
@@ -44,6 +45,11 @@ personal-website/
 ```
 
 ## Projects
+
+### Network Inspection Platform
+Production-grade TCP port scanner with async Python backend. Features concurrent scanning with semaphore-based rate limiting, SSRF protection, DNS validation, and structured logging. Clean architecture suitable for telecom-grade review.
+
+Built with Python 3.11, asyncio, FastAPI, deployed on Render.com
 
 ### AI Cloud Config Risk Scanner
 Scans AWS configs for security issues. Catches wildcard permissions, public access, hardcoded secrets, and open CIDR ranges. Returns severity-ranked risks with fix recommendations.

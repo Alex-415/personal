@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Inspection Platform — Al A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .scanner-container { max-width: 900px; margin: 0 auto; padding: 24px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .range-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .scan-btn { width: 100%; padding: 16px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .scan-btn:hover { background: #0052a3; }
+        .scan-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .results-container { margin-top: 32px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
+        .summary-value { font-size: 32px; font-weight: 700; color: #0066cc; }
+        .summary-label { font-size: 14px; color: #666; margin-top: 8px; }
+        .results-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .results-table th { background: #f8f9fa; padding: 16px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+        .results-table td { padding: 16px; border-bottom: 1px solid #eee; }
+        .status-open { color: #28a745; font-weight: 600; }
+        .status-closed { color: #dc3545; }
+        .status-timeout { color: #ffc107; }
+        .error-box { background: #fee; border: 1px solid #fcc; padding: 16px; border-radius: 8px; color: #c33; margin-top: 16px; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">Al A</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="projects.html">Projects</a>
+                <a href="index.html#contact" class="nav-cta">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Network Inspection Platform</h1>
+                <p class="hero-subtitle">Production-grade TCP port scanner with async concurrency control, SSRF protection, and structured logging. Python backend on Render.com with clean frontend.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="scanner-container">
+                <div class="input-group">
+                    <label for="host">Target Host</label>
+                    <input type="text" id="host" placeholder="example.com or IP address" value="scanme.nmap.org">
+                </div>
+                <div class="range-inputs">
+                    <div class="input-group">
+                        <label for="startPort">Start Port</label>
+                        <input type="number" id="startPort" min="1" max="65535" value="20">
+                    </div>
+                    <div class="input-group">
+                        <label for="endPort">End Port</label>
+                        <input type="number" id="endPort" min="1" max="65535" value="100">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="timeout">Timeout (ms)</label>
+                    <input type="number" id="timeout" min="100" max="5000" value="1000">
+                </div>
+                <button class="scan-btn" id="scanBtn">Start Scan</button>
+
+                <div id="error" class="error-box" style="display: none;"></div>
+                <div id="loading" class="loading" style="display: none;">Scanning ports...</div>
+
+                <div id="results" class="results-container" style="display: none;">
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-value" id="totalPorts">0</div>
+                            <div class="summary-label">Total Ports</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="openPorts">0</div>
+                            <div class="summary-label">Open Ports</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="closedPorts">0</div>
+                            <div class="summary-label">Closed Ports</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="avgLatency">0</div>
+                            <div class="summary-label">Avg Latency (ms)</div>
+                        </div>
+                    </div>
+
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Port</th>
+                                <th>Status</th>
+                                <th>Latency (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Technical Implementation</h2>
+                <div class="project-tags" style="justify-content: center; margin-bottom: 32px;">
+                    <span>Python 3.11</span>
+                    <span>asyncio</span>
+                    <span>FastAPI</span>
+                    <span>Render.com</span>
+                    <span>Vanilla JS</span>
+                </div>
+                <div style="max-width: 800px; margin: 0 auto; text-align: left;">
+                    <h3 style="margin-bottom: 16px;">Backend Architecture</h3>
+                    <ul style="line-height: 1.8; margin-bottom: 32px;">
+                        <li><strong>Async Concurrency:</strong> Uses asyncio with semaphore-based rate limiting to prevent resource exhaustion</li>
+                        <li><strong>Security:</strong> SSRF protection blocks localhost and private IP ranges, enforces max port range limits</li>
+                        <li><strong>Validation:</strong> Input sanitization, DNS resolution safety, timeout enforcement</li>
+                        <li><strong>Observability:</strong> Structured JSON logging with request timing and error tracking</li>
+                        <li><strong>Clean Code:</strong> Type hints, docstrings, proper error classes, no global state</li>
+                    </ul>
+                    <h3 style="margin-bottom: 16px;">Key Features</h3>
+                    <ul style="line-height: 1.8;">
+                        <li>TCP connect scan with latency measurement</li>
+                        <li>Configurable concurrency limits via environment variables</li>
+                        <li>Proper HTTP status codes and CORS headers</li>
+                        <li>Production-ready error handling and logging</li>
+                        <li>Clean separation of concerns (validation, scanning, response formatting)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+    <script>
+        const API_URL = 'https://your-render-backend.onrender.com/scan';
+
+        document.getElementById('scanBtn').addEventListener('click', async () => {
+            const host = document.getElementById('host').value.trim();
+            const startPort = parseInt(document.getElementById('startPort').value);
+            const endPort = parseInt(document.getElementById('endPort').value);
+            const timeout = parseInt(document.getElementById('timeout').value);
+
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('scanBtn').disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host, startPort, endPort, timeoutMs: timeout })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Scan failed');
+                }
+
+                displayResults(data);
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('scanBtn').disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('totalPorts').textContent = data.scanSummary.totalPorts;
+            document.getElementById('openPorts').textContent = data.scanSummary.openPorts;
+            document.getElementById('closedPorts').textContent = data.scanSummary.closedPorts;
+            document.getElementById('avgLatency').textContent = data.scanSummary.avgLatencyMs.toFixed(1);
+
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            data.results.forEach(result => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${result.port}</td>
+                    <td class="status-${result.status}">${result.status.toUpperCase()}</td>
+                    <td>${result.latencyMs ? result.latencyMs.toFixed(1) : 'N/A'}</td>
+                `;
+            });
+
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
