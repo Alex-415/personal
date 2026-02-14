@@ -28,12 +28,7 @@
         <section class="hero">
             <div class="container">
                 <h1 class="hero-title">Microservice Health Simulator</h1>
-                <p class="hero-subtitle">Production-grade distributed system simulator with real-time health monitoring, failure propagation, and circuit breaker patterns. Built for telecom-grade architecture review.</p>
-                <div style="background: #1e3a8a; color: #bfdbfe; padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center;">
-                    <p style="font-size: 16px; margin-bottom: 10px;">💼 <strong>Interested in discussing this architecture?</strong></p>
-                    <p style="font-size: 14px; margin-bottom: 15px;">I built this to demonstrate production-ready distributed systems design, concurrent programming, and cloud-native deployment patterns.</p>
-                    <p style="font-size: 14px;">📧 <strong>al.software.ca@gmail.com</strong> | 💼 <a href="https://www.linkedin.com/in/al-software" style="color: #60a5fa; text-decoration: underline;" target="_blank">LinkedIn</a></p>
-                </div>
+                <p class="hero-subtitle">Real-time distributed system monitoring with failure simulation and WebSocket streaming. Go backend deployed on Render.com.</p>
             </div>
         </section>
 
@@ -41,100 +36,57 @@
             <div class="container">
                 <div class="project-detail">
                     <h2>Overview</h2>
-                    <p>A production-ready microservice health monitoring system that simulates a network of interconnected services with realistic failure scenarios, latency tracking, and dependency management. This project demonstrates my expertise in distributed systems architecture, concurrent programming (Go/Python), real-time data streaming, and cloud deployment.</p>
-                    
-                    <div style="background: #1e293b; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
-                        <h3 style="color: #60a5fa; margin-bottom: 10px;">🎯 Why I Built This</h3>
-                        <p style="margin-bottom: 10px;">To showcase production-level skills that telecom and cloud infrastructure companies look for:</p>
-                        <ul style="margin-left: 20px; line-height: 1.8;">
-                            <li><strong>Distributed Systems Design:</strong> Service mesh simulation with dependency graphs and failure propagation</li>
-                            <li><strong>Concurrent Programming:</strong> Go goroutines and Python asyncio for high-performance parallel processing</li>
-                            <li><strong>Real-time Streaming:</strong> WebSocket implementation for live metric updates</li>
-                            <li><strong>Cloud-Native Deployment:</strong> Dockerized microservices on Render.com with CI/CD-ready architecture</li>
-                            <li><strong>Observability Patterns:</strong> Metrics collection, health checks, and structured logging</li>
-                        </ul>
-                    </div>
+                    <p>Simulates a network of 9 interconnected microservices with real-time health monitoring. Tracks latency, error rates, and service dependencies. Demonstrates failure propagation across dependent services with live WebSocket updates.</p>
 
                     <h2>Key Features</h2>
                     <ul>
-                        <li><strong>Concurrent Service Simulation:</strong> Async Python tasks simulate 5-10 microservices with configurable dependencies</li>
-                        <li><strong>Real-time Metrics:</strong> Track latency, error rates, success rates, and uptime per service</li>
-                        <li><strong>Failure Propagation:</strong> Simulate cascading failures across dependent services</li>
-                        <li><strong>Circuit Breaker Pattern:</strong> Implement resilience patterns for microservice communication</li>
-                        <li><strong>WebSocket Streaming:</strong> Real-time metric updates to frontend dashboard</li>
-                        <li><strong>Interactive Dashboard:</strong> Visual service graph with color-coded health status and metric charts</li>
-                        <li><strong>Production Architecture:</strong> Dockerized backend, structured logging, graceful shutdown</li>
+                        <li><strong>Concurrent Simulation:</strong> Go goroutines simulate 9 services with configurable dependencies</li>
+                        <li><strong>Real-time Metrics:</strong> Latency, error rates, success rates, uptime per service</li>
+                        <li><strong>Failure Propagation:</strong> Cascading failures across service dependencies</li>
+                        <li><strong>WebSocket Streaming:</strong> Live metric updates to Vue.js dashboard</li>
+                        <li><strong>Interactive Controls:</strong> Trigger failures on any service, watch propagation</li>
+                        <li><strong>Dependency Graph:</strong> Visual service mesh with color-coded health status</li>
                     </ul>
 
                     <h2>Technical Implementation</h2>
-                    <h3>Backend (Python + FastAPI)</h3>
+                    <h3>Backend (Go)</h3>
                     <ul>
-                        <li>Async endpoints with asyncio for concurrent service simulation</li>
-                        <li>Semaphore-based concurrency control for metric updates</li>
+                        <li>Gorilla Mux for HTTP routing</li>
+                        <li>Gorilla WebSocket for real-time streaming</li>
+                        <li>RWMutex for thread-safe concurrent metrics</li>
+                        <li>Goroutines for parallel service simulation</li>
                         <li>REST API: GET /services, GET /metrics, POST /simulate-failure</li>
-                        <li>WebSocket endpoint for real-time event streaming</li>
-                        <li>Dependency graph traversal for failure propagation</li>
-                        <li>JSON structured logging with timestamps</li>
-                        <li>Environment-based configuration (service count, error rates, latency)</li>
-                        <li>Docker container ready for Render.com deployment</li>
+                        <li>Multi-stage Docker build for minimal image size</li>
                     </ul>
 
-                    <h3>Frontend (React + TypeScript)</h3>
+                    <h3>Frontend (Vue.js)</h3>
                     <ul>
-                        <li>Dynamic service graph with node visualization</li>
-                        <li>Color-coded health indicators (green/yellow/red)</li>
-                        <li>Real-time metric charts (latency, error rate, success rate)</li>
-                        <li>Interactive service selection and failure triggering</li>
-                        <li>WebSocket client for live updates</li>
-                        <li>Strong TypeScript typing throughout</li>
-                        <li>Modular component architecture</li>
+                        <li>Real-time service grid with health indicators</li>
+                        <li>Auto-refresh toggle for live monitoring</li>
+                        <li>Wake-up button for Render.com free tier</li>
+                        <li>Failure simulation controls per service</li>
+                        <li>Dependency visualization</li>
                     </ul>
 
-                    <h2>Architecture Highlights</h2>
+                    <h2>Architecture</h2>
                     <ul>
-                        <li><strong>Concurrency-Safe Metrics:</strong> Atomic operations with asyncio locks</li>
-                        <li><strong>Dependency Management:</strong> Graph-based service relationships</li>
-                        <li><strong>Error Simulation:</strong> Configurable failure probability per service</li>
-                        <li><strong>End-to-End Latency:</strong> Track request paths across multiple services</li>
-                        <li><strong>Health Monitoring:</strong> /health endpoint for platform monitoring</li>
-                        <li><strong>Graceful Shutdown:</strong> Proper task cancellation and cleanup</li>
+                        <li><strong>9 Simulated Services:</strong> api-gateway, auth-service, user-service, order-service, payment-service, inventory-service, notification-service, db-service, cache-service</li>
+                        <li><strong>Dependency Graph:</strong> Services call dependencies with realistic latency and error rates</li>
+                        <li><strong>Metrics Collection:</strong> Mutex-protected concurrent updates</li>
+                        <li><strong>Health Status:</strong> Green (healthy), Yellow (degraded >20% errors), Red (forced failure)</li>
                     </ul>
 
                     <h2>Tech Stack</h2>
                     <div class="project-tags">
-                        <span>Python 3.11</span>
-                        <span>FastAPI</span>
-                        <span>asyncio</span>
-                        <span>WebSockets</span>
-                        <span>React</span>
-                        <span>TypeScript</span>
+                        <span>Go 1.21</span>
+                        <span>Gorilla Mux</span>
+                        <span>Gorilla WebSocket</span>
+                        <span>Vue.js 3</span>
                         <span>Docker</span>
                         <span>Render.com</span>
                         <span>Netlify</span>
                     </div>
 
-                    <h2>Use Cases</h2>
-                    <ul>
-                        <li>Microservice architecture training and visualization</li>
-                        <li>Testing monitoring and alerting systems</li>
-                        <li>Demonstrating circuit breaker and resilience patterns</li>
-                        <li>Simulating distributed system failures</li>
-                        <li>Performance testing observability tools</li>
-                    </ul>
-
-                    <div style="background: #065f46; padding: 20px; border-radius: 8px; margin: 30px 0;">
-                        <h3 style="color: #6ee7b7; margin-bottom: 15px;">📞 Let's Discuss This Project</h3>
-                        <p style="margin-bottom: 15px; line-height: 1.6;">I'm available to discuss the technical decisions, architecture patterns, and trade-offs in this implementation. Whether you're hiring for backend engineering, DevOps, or distributed systems roles, I can walk through:</p>
-                        <ul style="margin-left: 20px; margin-bottom: 15px; line-height: 1.8;">
-                            <li>Why I chose Go vs Python for different components</li>
-                            <li>How I implemented thread-safe concurrent metrics collection</li>
-                            <li>The failure propagation algorithm and dependency graph traversal</li>
-                            <li>WebSocket vs polling trade-offs for real-time updates</li>
-                            <li>Docker multi-stage builds and deployment optimization</li>
-                        </ul>
-                        <p style="font-size: 16px; font-weight: 600;">📧 <strong>al.software.ca@gmail.com</strong></p>
-                        <p style="font-size: 14px; margin-top: 8px;">💼 <a href="https://www.linkedin.com/in/al-software" style="color: #6ee7b7; text-decoration: underline;" target="_blank">Connect on LinkedIn</a></p>
-                    </div>
 
                     <div class="project-actions">
                         <a href="projects.html" class="btn-secondary">← Back to Projects</a>
