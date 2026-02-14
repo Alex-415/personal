@@ -62,13 +62,10 @@ func NewSimulator() *Simulator {
 	services := map[string]ServiceConfig{
 		"api-gateway":          {Deps: []string{"auth-service", "user-service"}, ErrorProb: 0.02},
 		"auth-service":         {Deps: []string{"db-service"}, ErrorProb: 0.03},
-		"user-service":         {Deps: []string{"db-service", "cache-service"}, ErrorProb: 0.04},
-		"order-service":        {Deps: []string{"payment-service", "inventory-service"}, ErrorProb: 0.05},
-		"payment-service":      {Deps: []string{"db-service"}, ErrorProb: 0.06},
-		"inventory-service":    {Deps: []string{"db-service", "cache-service"}, ErrorProb: 0.04},
-		"notification-service": {Deps: []string{}, ErrorProb: 0.03},
+		"user-service":         {Deps: []string{"db-service"}, ErrorProb: 0.04},
+		"order-service":        {Deps: []string{"payment-service"}, ErrorProb: 0.05},
+		"payment-service":      {Deps: []string{}, ErrorProb: 0.06},
 		"db-service":           {Deps: []string{}, ErrorProb: 0.02},
-		"cache-service":        {Deps: []string{}, ErrorProb: 0.03},
 	}
 
 	metrics := make(map[string]*ServiceData)
