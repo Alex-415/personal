@@ -1,0 +1,50 @@
+# Cloudflare Workers Configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "aws-cost-anomaly-detector"
+main = "src/worker.ts"
+compatibility_date = "2024-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Account ID (get from `wrangler whoami` or Cloudflare dashboard)
+# account_id = "your-account-id-here"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "cost-anomaly-db"
+database_id = ""  # Will be filled after creating the database
+
+# Environment variables (use secrets for sensitive data)
+[vars]
+AWS_REGION = "us-east-1"
+
+# Secrets (set with `wrangler secret put <NAME>`)
+# Required:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+#
+# Optional:
+# - SLACK_WEBHOOK_URL (for Slack alerts)
+# - SENDGRID_API_KEY (for email alerts)
+# - FROM_EMAIL (sender email for SendGrid)
+# - CRON_SECRET (for securing cron endpoint)
+
+# Cron trigger for daily cost fetch
+# Runs at 6 AM UTC daily
+[triggers]
+crons = ["0 6 * * *"]
+
+# Development settings
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Enable logging
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Production environment overrides
+[env.production]
+name = "aws-cost-anomaly-detector-prod"

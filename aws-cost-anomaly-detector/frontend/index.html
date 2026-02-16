@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cost Anomaly Detector</title>
+    <meta name="description" content="Monitor AWS costs and detect spending anomalies in real-time">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo .icon {
+            font-size: 1.5rem;
+        }
+
+        .nav-logo span {
+            color: var(--accent);
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Intro Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+            text-align: center;
+        }
+
+        .modal h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .modal-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .modal-input-group {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal-input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .stat-card h3 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-card .change {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Charts */
+        .chart-container {
+            height: 320px;
+            position: relative;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--bg-card);
+        }
+
+        td {
+            font-size: 0.875rem;
+            background: var(--bg-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--bg-primary);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-dod {
+            background: rgba(217, 119, 6, 0.15);
+            color: var(--warning);
+        }
+
+        .badge-wow {
+            background: rgba(37, 99, 235, 0.15);
+            color: var(--accent);
+        }
+
+        .badge-alerted {
+            background: rgba(22, 163, 74, 0.15);
+            color: var(--success);
+        }
+
+        .badge-pending {
+            background: rgba(220, 38, 38, 0.15);
+            color: var(--danger);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Actions Bar */
+        .actions-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.75rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .alert-banner.show {
+            display: flex;
+        }
+
+        .alert-banner.success {
+            background: rgba(22, 163, 74, 0.08);
+            border-color: rgba(22, 163, 74, 0.3);
+        }
+
+        .alert-banner.warning {
+            background: rgba(217, 119, 6, 0.08);
+            border-color: rgba(217, 119, 6, 0.3);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .info-box strong {
+            color: var(--accent);
+        }
+
+        /* Utility */
+        .hidden { display: none; }
+        .text-danger { color: var(--danger); }
+        .text-success { color: var(--success); }
+        .text-warning { color: var(--warning); }
+        .text-accent { color: var(--accent); }
+        .mt-4 { margin-top: 1rem; }
+        .mb-4 { margin-bottom: 1rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main { padding: 1rem; }
+            .dashboard { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .section-header { flex-direction: column; align-items: flex-start; }
+            .modal { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Intro / API Key Modal -->
+    <div id="apiKeyModal" class="modal-overlay">
+        <div class="modal">
+            <span class="modal-icon">📊</span>
+            <h2>AWS Cost Anomaly Detector</h2>
+            <p class="modal-subtitle">Monitor your AWS spending in real-time and get alerted when costs spike unexpectedly.</p>
+            
+            <ul class="feature-list">
+                <li>Connect to AWS Cost Explorer API to fetch daily costs by service</li>
+                <li>Detect anomalies: automatic alerts for >20% spending spikes</li>
+                <li>Track trends with historical data stored in Cloudflare D1</li>
+                <li>Get notified via Slack or email when anomalies are detected</li>
+                <li>Simple dashboard showing current spend, trends, and alerts</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>🎯 Two modes available:</strong><br>
+                <strong>Demo Mode:</strong> Try the dashboard with sample AWS data (no credentials needed)<br>
+                <strong>Production Mode:</strong> Connect your real AWS account for live monitoring
+            </div>
+
+            <div class="modal-input-group">
+                <label for="apiKeyInput">Enter your API key</label>
+                <input type="password" id="apiKeyInput" placeholder="sk-..." />
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" onclick="saveApiKey()">
+                        🔑 Continue to Dashboard
+                    </button>
+                    <button class="btn btn-secondary" onclick="generateKey()">
+                        ✨ Generate New Key
+                    </button>
+                </div>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">or</span>
+                </div>
+                <button class="btn btn-secondary" onclick="enableDemoMode()" style="width: 100%; margin-top: 0.75rem;">
+                    🎬 Try Demo Mode (No API Key Needed)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="icon">📊</span>
+                AWS <span>Cost Detector</span>
+            </a>
+            <div class="nav-status">
+                <span class="status-dot"></span>
+                <span id="connectionStatus">Connected</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Alert Banner -->
+        <div id="alertBanner" class="alert-banner hidden">
+            <span id="alertIcon">⚠️</span>
+            <span id="alertMessage"></span>
+        </div>
+
+        <!-- Setup Info -->
+        <div class="info-box">
+            <strong>📋 Getting Started:</strong> 
+            <span id="setupSteps">1) Generate an API key above &nbsp;|&nbsp; 2) Add your AWS credentials &nbsp;|&nbsp; 3) Fetch costs from AWS</span>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div class="dashboard">
+            <div class="stat-card">
+                <h3>Total Spend (30 days)</h3>
+                <div class="value" id="totalSpend">$0.00</div>
+                <div class="change" id="totalSpendChange">No data yet</div>
+            </div>
+            <div class="stat-card">
+                <h3>Average Daily</h3>
+                <div class="value" id="avgDaily">$0.00</div>
+                <div class="change" id="avgDailyChange">No data yet</div>
+            </div>
+            <div class="stat-card">
+                <h3>Peak Daily</h3>
+                <div class="value" id="peakDaily">$0.00</div>
+                <div class="change" id="peakDailyDate">No data yet</div>
+            </div>
+            <div class="stat-card">
+                <h3>Anomalies (7 days)</h3>
+                <div class="value" id="anomalyCount">0</div>
+                <div class="change" id="anomalyChange">Last 7 days</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Actions</h2>
+                <div class="actions-bar">
+                    <button class="btn btn-primary" onclick="fetchCosts()">
+                        📥 Fetch Costs
+                    </button>
+                    <button class="btn btn-secondary" onclick="detectAnomalies()">
+                        🔍 Detect Anomalies
+                    </button>
+                    <button class="btn btn-secondary" onclick="sendAlerts()">
+                        📧 Send Alerts
+                    </button>
+                </div>
+            </div>
+            <div id="actionStatus" class="hidden"></div>
+        </div>
+
+        <!-- Cost Trend Chart -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Cost Trend</h2>
+                <select id="trendDays" onchange="loadTrend()" style="padding: 0.5rem 1rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.875rem;">
+                    <option value="7">7 days</option>
+                    <option value="14">14 days</option>
+                    <option value="30" selected>30 days</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+            <div id="chartEmpty" class="empty-state">
+                <div class="empty-state-icon">📈</div>
+                <div class="empty-state-text">No cost data available</div>
+                <div class="empty-state-hint">Click "Fetch Costs" to load data from AWS Cost Explorer</div>
+            </div>
+        </div>
+
+        <!-- Top Services -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Top Services by Cost</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Total Cost</th>
+                            <th>Days Active</th>
+                            <th>% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topServicesBody">
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">No service data available</div>
+                                    <div class="empty-state-hint">Fetch costs from AWS to see breakdown by service</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Anomalies -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Recent Anomalies</h2>
+                <button class="btn btn-sm btn-secondary" onclick="loadAnomalies()">
+                    🔄 Refresh
+                </button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Service</th>
+                            <th>Current</th>
+                            <th>Previous</th>
+                            <th>Spike</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anomaliesBody">
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">No anomalies detected</div>
+                                    <div class="empty-state-hint">Run anomaly detection after fetching cost data</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AWS Account Setup -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">AWS Account Setup</h2>
+                <span id="demoModeBadge" class="badge badge-wow" style="display: none;">Demo Mode</span>
+            </div>
+            <div id="demoModeInfo" class="info-box" style="display: none;">
+                <strong>🎬 Demo Mode Active:</strong> You're viewing sample AWS data. 
+                To use real AWS credentials, <a href="#" onclick="switchToProductionMode(); return false;" style="color: var(--accent);">click here</a> to switch to production mode.
+            </div>
+            <form onsubmit="addAwsAccount(event)" id="awsAccountForm" style="max-width: 600px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="accountName">Account Name</label>
+                        <input type="text" id="accountName" placeholder="e.g., Production" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="awsRegion">AWS Region</label>
+                        <select id="awsRegion">
+                            <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                            <option value="us-west-2">us-west-2 (Oregon)</option>
+                            <option value="eu-west-1">eu-west-1 (Ireland)</option>
+                            <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="awsAccessKey">AWS Access Key ID</label>
+                        <input type="text" id="awsAccessKey" placeholder="AKIA..." required />
+                    </div>
+                    <div class="form-group">
+                        <label for="awsSecretKey">AWS Secret Access Key</label>
+                        <input type="password" id="awsSecretKey" placeholder="Your secret key" required />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add AWS Account</button>
+            </form>
+            <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                🔒 Your AWS credentials are stored securely and only used to fetch cost data from the AWS Cost Explorer API.
+            </p>
+        </div>
+
+        <!-- Alert Configuration -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Alert Configuration</h2>
+            </div>
+            <form onsubmit="saveAlertConfig(event)" style="max-width: 500px;">
+                <div class="form-group">
+                    <label>Alert Type</label>
+                    <select id="alertType" required>
+                        <option value="slack">Slack Webhook</option>
+                        <option value="email">Email (SendGrid)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Destination</label>
+                    <input type="text" id="alertDestination" placeholder="https://hooks.slack.com/... or email@example.com" required />
+                </div>
+                <div class="form-group">
+                    <label>Minimum Alert Amount ($)</label>
+                    <input type="number" id="minAlertAmount" placeholder="0" step="0.01" min="0" value="0" />
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Only alert if spike exceeds this amount</span>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script>
+        // API Configuration
+        let API_KEY = localStorage.getItem('aws_cost_api_key');
+        const API_BASE = ''; // Same origin
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if previously in demo mode
+            const isDemoMode = localStorage.getItem('aws_demo_mode') === 'true';
+            
+            if (API_KEY) {
+                document.getElementById('apiKeyModal').classList.add('hidden');
+                if (isDemoMode) {
+                    showDemoBanner();
+                }
+                loadDashboard();
+            }
+        });
+
+        // API Key Management
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            API_KEY = input.value.trim();
+            if (API_KEY) {
+                localStorage.setItem('aws_cost_api_key', API_KEY);
+                document.getElementById('apiKeyModal').classList.add('hidden');
+                loadDashboard();
+            }
+        }
+
+        async function generateKey() {
+            try {
+                const response = await fetch(`${API_BASE}/api/keys`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Dashboard Key' }),
+                });
+                const data = await response.json();
+                if (data.apiKey) {
+                    API_KEY = data.apiKey;
+                    localStorage.setItem('aws_cost_api_key', API_KEY);
+                    document.getElementById('apiKeyModal').classList.add('hidden');
+                    alert('⚠️ IMPORTANT: Save this API key securely. It cannot be retrieved later.\n\n' + data.apiKey);
+                    loadDashboard();
+                }
+            } catch (error) {
+                alert('Failed to generate key: ' + error.message);
+            }
+        }
+
+        async function enableDemoMode() {
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+                btn.textContent = '⏳ Loading demo data...';
+                
+                // Seed demo data
+                const response = await fetch(`${API_BASE}/api/demo/seed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Generate a demo API key
+                    const keyResponse = await fetch(`${API_BASE}/api/keys`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: 'Demo Mode Key' }),
+                    });
+                    const keyData = await keyResponse.json();
+                    
+                    if (keyData.apiKey) {
+                        API_KEY = keyData.apiKey;
+                        localStorage.setItem('aws_cost_api_key', API_KEY);
+                        localStorage.setItem('aws_demo_mode', 'true');
+                        document.getElementById('apiKeyModal').classList.add('hidden');
+                        
+                        // Show demo mode banner
+                        showDemoBanner();
+                        loadDashboard();
+                    }
+                }
+            } catch (error) {
+                alert('Failed to load demo data: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '🎬 Try Demo Mode (No API Key Needed)';
+            }
+        }
+
+        function showDemoBanner() {
+            const banner = document.getElementById('alertBanner');
+            const icon = document.getElementById('alertIcon');
+            const message = document.getElementById('alertMessage');
+            
+            icon.textContent = '🎬';
+            message.innerHTML = '<strong>Demo Mode:</strong> Viewing sample AWS data. <a href="#" onclick="switchToProductionMode(); return false;" style="color: inherit; text-decoration: underline;">Switch to production mode</a>';
+            banner.className = 'alert-banner show warning';
+            banner.style.display = 'flex';
+            
+            // Show demo mode badges
+            document.getElementById('demoModeBadge').style.display = 'inline-block';
+            document.getElementById('demoModeInfo').style.display = 'block';
+            document.getElementById('awsAccountForm').style.opacity = '0.5';
+            document.getElementById('awsAccountForm').style.pointerEvents = 'none';
+        }
+
+        function switchToProductionMode() {
+            localStorage.removeItem('aws_demo_mode');
+            location.reload();
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('aws_cost_api_key');
+            localStorage.removeItem('aws_demo_mode');
+            location.reload();
+        }
+
+        // API Helper
+        async function api(endpoint, options = {}) {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`,
+                    ...options.headers,
+                },
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Request failed');
+            }
+
+            return data;
+        }
+
+        // Load Dashboard Data
+        async function loadDashboard() {
+            try {
+                await Promise.all([
+                    loadSummary(),
+                    loadTrend(),
+                    loadAnomalies(),
+                ]);
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                updateConnectionStatus(false);
+                showAlert('Failed to load dashboard: ' + error.message, 'error');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const dot = document.querySelector('.status-dot');
+            if (connected) {
+                status.textContent = 'Connected';
+                dot.style.background = 'var(--success)';
+            } else {
+                status.textContent = 'Disconnected';
+                dot.style.background = 'var(--danger)';
+            }
+        }
+
+        // Load Cost Summary
+        async function loadSummary() {
+            try {
+                const data = await api('/api/costs/summary?days=30');
+                
+                document.getElementById('totalSpend').textContent = formatCurrency(data.summary.totalCost);
+                document.getElementById('avgDaily').textContent = formatCurrency(data.summary.avgDailyCost);
+                document.getElementById('peakDaily').textContent = formatCurrency(data.summary.maxDailyCost);
+                
+                // Update change indicators
+                if (data.summary.daysCount > 0) {
+                    document.getElementById('totalSpendChange').textContent = `Over ${data.summary.daysCount} days`;
+                    document.getElementById('avgDailyChange').textContent = 'Per day average';
+                }
+                
+                // Load top services
+                const tbody = document.getElementById('topServicesBody');
+                const total = data.summary.totalCost;
+                
+                if (data.topServices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-text">No service data available</div><div class="empty-state-hint">Fetch costs from AWS to see breakdown by service</div></div></td></tr>';
+                } else {
+                    tbody.innerHTML = data.topServices.map(service => `
+                        <tr>
+                            <td><strong>${escapeHtml(service.service_name)}</strong></td>
+                            <td>${formatCurrency(service.total_cost)}</td>
+                            <td>${service.days_active}</td>
+                            <td>${total > 0 ? ((service.total_cost / total) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load summary:', error);
+            }
+        }
+
+        // Load Trend Chart
+        let trendChartInstance = null;
+
+        async function loadTrend() {
+            try {
+                const days = document.getElementById('trendDays').value;
+                const data = await api(`/api/costs/trend?days=${days}`);
+                
+                const chartEmpty = document.getElementById('chartEmpty');
+                const canvas = document.getElementById('trendChart');
+                
+                if (data.trend.length === 0) {
+                    chartEmpty.style.display = 'block';
+                    canvas.style.display = 'none';
+                    if (trendChartInstance) {
+                        trendChartInstance.destroy();
+                        trendChartInstance = null;
+                    }
+                    return;
+                }
+                
+                chartEmpty.style.display = 'none';
+                canvas.style.display = 'block';
+                
+                const ctx = canvas.getContext('2d');
+                
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+
+                trendChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.trend.map(d => formatDate(d.cost_date)),
+                        datasets: [{
+                            label: 'Daily Cost ($)',
+                            data: data.trend.map(d => d.total_cost_usd),
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#2563eb',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#f8fafc',
+                                borderColor: '#e2e8f0',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    label: (ctx) => `$${ctx.parsed.y.toFixed(2)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { 
+                                    color: 'rgba(226, 232, 240, 0.5)',
+                                    drawBorder: false,
+                                },
+                                ticks: { 
+                                    color: '#64748b',
+                                    maxTicksLimit: 10,
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                grid: { 
+                                    color: 'rgba(226, 232, 240, 0.5)',
+                                    drawBorder: false,
+                                },
+                                ticks: { 
+                                    color: '#64748b',
+                                    font: { size: 11 },
+                                    callback: (value) => '$' + value
+                                },
+                                beginAtZero: true,
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load trend:', error);
+            }
+        }
+
+        // Load Anomalies
+        async function loadAnomalies() {
+            try {
+                const data = await api('/api/anomalies?days=7');
+                
+                document.getElementById('anomalyCount').textContent = data.anomalies.length;
+                
+                const tbody = document.getElementById('anomaliesBody');
+                
+                if (data.anomalies.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No anomalies detected</div><div class="empty-state-hint">Your AWS spending looks normal for the past 7 days</div></div></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.anomalies.map(a => `
+                    <tr>
+                        <td>${formatDate(a.cost_date)}</td>
+                        <td><strong>${escapeHtml(a.service_name)}</strong></td>
+                        <td>${formatCurrency(a.current_cost)}</td>
+                        <td>${formatCurrency(a.previous_cost)}</td>
+                        <td class="text-danger"><strong>+${a.spike_percentage.toFixed(1)}%</strong></td>
+                        <td><span class="badge badge-${a.spike_type}">${a.spike_type === 'dod' ? 'Day-over-Day' : 'Week-over-Week'}</span></td>
+                        <td><span class="badge ${a.is_alerted ? 'badge-alerted' : 'badge-pending'}">${a.is_alerted ? 'Alerted' : 'Pending'}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load anomalies:', error);
+            }
+        }
+
+        // Actions
+        async function fetchCosts() {
+            const status = document.getElementById('actionStatus');
+            status.className = '';
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Fetching costs from AWS Cost Explorer...</div>';
+            status.classList.remove('hidden');
+
+            try {
+                const result = await api('/api/costs/fetch', { method: 'POST' });
+                status.innerHTML = `<div class="alert-banner show success">✅ ${result.message}</div>`;
+                await loadSummary();
+                await loadTrend();
+            } catch (error) {
+                status.innerHTML = `<div class="alert-banner show">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function detectAnomalies() {
+            const status = document.getElementById('actionStatus');
+            status.className = '';
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing cost data for anomalies...</div>';
+            status.classList.remove('hidden');
+
+            try {
+                const result = await api('/api/anomalies/detect', { method: 'POST' });
+                status.innerHTML = `<div class="alert-banner show ${result.anomaliesDetected > 0 ? 'warning' : 'success'}">
+                    ${result.anomaliesDetected > 0 ? '⚠️' : '✅'} ${result.anomaliesDetected} anomalies detected
+                </div>`;
+                await loadAnomalies();
+            } catch (error) {
+                status.innerHTML = `<div class="alert-banner show">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function sendAlerts() {
+            const status = document.getElementById('actionStatus');
+            status.className = '';
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Sending alerts...</div>';
+            status.classList.remove('hidden');
+
+            try {
+                const result = await api('/api/alerts/send', { method: 'POST' });
+                status.innerHTML = `<div class="alert-banner show success">✅ ${result.message}</div>`;
+                await loadAnomalies();
+            } catch (error) {
+                status.innerHTML = `<div class="alert-banner show">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function addAwsAccount(event) {
+            event.preventDefault();
+            
+            const accountName = document.getElementById('accountName').value;
+            const accessKeyId = document.getElementById('awsAccessKey').value;
+            const secretAccessKey = document.getElementById('awsSecretKey').value;
+            const region = document.getElementById('awsRegion').value;
+
+            try {
+                const result = await api('/api/accounts', {
+                    method: 'POST',
+                    body: JSON.stringify({ accountName, accessKeyId, secretAccessKey, region }),
+                });
+                showAlert('✅ AWS account added: ' + accountName, 'success');
+                event.target.reset();
+            } catch (error) {
+                showAlert('Failed to add account: ' + error.message, 'error');
+            }
+        }
+
+        async function saveAlertConfig(event) {
+            event.preventDefault();
+            
+            const alertType = document.getElementById('alertType').value;
+            const destination = document.getElementById('alertDestination').value;
+            const minAlertAmount = parseFloat(document.getElementById('minAlertAmount').value) || 0;
+
+            try {
+                await api('/api/alerts/config', {
+                    method: 'POST',
+                    body: JSON.stringify({ alertType, destination, minAlertAmount }),
+                });
+                showAlert('Alert configuration saved successfully', 'success');
+                event.target.reset();
+            } catch (error) {
+                showAlert('Failed to save configuration: ' + error.message, 'error');
+            }
+        }
+
+        // Utilities
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showAlert(message, type = 'info') {
+            const banner = document.getElementById('alertBanner');
+            const messageEl = document.getElementById('alertMessage');
+            const icon = document.getElementById('alertIcon');
+
+            banner.className = 'alert-banner';
+            if (type === 'error') {
+                icon.textContent = '❌';
+            } else if (type === 'success') {
+                banner.classList.add('success');
+                icon.textContent = '✅';
+            } else {
+                banner.classList.add('warning');
+                icon.textContent = '⚠️';
+            }
+
+            messageEl.textContent = message;
+            banner.classList.add('show');
+
+            setTimeout(() => {
+                banner.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
