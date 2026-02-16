@@ -1,0 +1,16 @@
+{
+  "name": "booking-service-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "db:init": "wrangler d1 execute booking-service-db --local --file=../database/schema.sql",
+    "db:init:prod": "wrangler d1 execute booking-service-db --file=../database/schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240101.0",
+    "wrangler": "^3.57.0",
+    "typescript": "^5.4.5"
+  }
+}

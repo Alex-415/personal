@@ -1,0 +1,18 @@
+name = "booking-service-api"
+main = "src/worker.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "booking-service-db"
+database_id = ""  # Fill after creating
+
+# KV Namespace for distributed locks
+[[kv_namespaces]]
+binding = "CACHE"
+id = ""  # Fill after creating
+
+[vars]
+CORS_ORIGIN = "*"

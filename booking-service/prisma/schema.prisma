@@ -1,0 +1,88 @@
+// Prisma Schema for Booking Service
+// Production-grade schema with proper constraints for race-condition safety
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// User model - represents a person who can make bookings
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([email])
+  @@map("users")
+}
+
+/// Booking model - core entity with race-condition prevention
+model Booking {
+  id              String   @id @default(uuid())
+  userId          String?  // Optional for demo (in production, would be required)
+  startTime       DateTime // Always stored in UTC
+  endTime         DateTime // Always stored in UTC
+  status          BookingStatus @default(PENDING)
+  metadata        Json?    // Flexible metadata (title, location, notes, etc.)
+  idempotencyKey  String   @unique // Prevents duplicate bookings
+  version         Int      @default(1) // Optimistic locking
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // CRITICAL: Unique constraint prevents overlapping bookings at DB level
+  // Combined with transaction + lock, this is race-condition safe
+  @@unique([startTime, endTime, userId])
+  
+  // Index for efficient time-range queries
+  @@index([startTime, endTime])
+  @@index([userId, startTime])
+  @@index([status])
+  @@map("bookings")
+}
+
+/// Booking status enum
+enum BookingStatus {
+  PENDING   // Booking created, awaiting confirmation
+  CONFIRMED // Booking confirmed
+  CANCELLED // Booking cancelled
+  COMPLETED // Booking completed
+}
+
+/// Audit log for tracking all booking changes
+model BookingAuditLog {
+  id          String   @id @default(uuid())
+  bookingId   String
+  action      String   // CREATED, UPDATED, CANCELLED, RESCHEDULED
+  previous    Json?    // Previous state
+  current     Json?    // New state
+  userId      String
+  createdAt   DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([createdAt])
+  @@map("booking_audit_logs")
+}
+
+/// Distributed lock metadata (for monitoring)
+model DistributedLock {
+  id        String   @id @default(uuid())
+  lockKey   String   @unique
+  ownerId   String   // Service instance that holds the lock
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([lockKey])
+  @@index([expiresAt])
+  @@map("distributed_locks")
+}

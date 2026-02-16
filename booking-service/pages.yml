@@ -1,0 +1,9 @@
+# Deploy to Cloudflare Pages
+# This dashboard connects to your deployed Worker API
+
+build:
+  command: echo "No build needed - static site"
+  output: public
+
+pages:
+  - public

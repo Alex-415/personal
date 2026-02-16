@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Service - Live Demo</title>
+    <meta name="description" content="Interactive demo of production-grade booking service with race-condition protection">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo .icon { font-size: 1.5rem; }
+        .nav-logo span { color: var(--accent); }
+
+        /* Main */
+        main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        /* Hero */
+        .hero {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            max-width: 800px;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .info-box.warning {
+            background: rgba(217, 119, 6, 0.08);
+            border-color: rgba(217, 119, 6, 0.3);
+        }
+
+        .info-box strong { color: var(--accent); }
+        .info-box.warning strong { color: var(--warning); }
+
+        .info-box code {
+            background: var(--bg-card);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+        }
+
+        .info-box ol {
+            margin: 0.75rem 0 0 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .info-box li { margin-bottom: 0.5rem; }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            font-size: 1.125rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1.25rem;
+            background: var(--bg-card);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+        }
+
+        /* Forms */
+        .form-group { margin-bottom: 1.25rem; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+            box-shadow: 0 4px 8px rgba(22, 163, 74, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .alert-success {
+            background: rgba(22, 163, 74, 0.08);
+            border: 1px solid rgba(22, 163, 74, 0.3);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: var(--danger);
+        }
+
+        /* Concurrency Card */
+        .concurrency-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .concurrency-test h2 { color: white; }
+        .concurrency-test .stat { background: rgba(255,255,255,0.15); }
+        .concurrency-test .stat-value { color: white; }
+        .concurrency-test .stat-label { color: rgba(255,255,255,0.8); }
+        .concurrency-test p { opacity: 0.95; }
+
+        /* Progress */
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s;
+        }
+
+        /* Log */
+        .log-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .log-container h2 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 10px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8rem;
+            max-height: 350px;
+            overflow-y: auto;
+            line-height: 1.8;
+        }
+
+        .log-entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #94a3b8; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 3rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main { padding: 1rem; }
+            .hero { padding: 1.5rem; }
+            .hero h1 { font-size: 1.5rem; }
+            .grid { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="icon">📅</span>
+                Booking <span>Service</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero -->
+        <div class="hero">
+            <h1>🎬 Booking Service Demo</h1>
+            <p>Production-grade distributed booking system with race-condition protection using Redis distributed locks and database transactions.</p>
+        </div>
+
+        <!-- Demo Mode Notice -->
+        <div class="info-box warning" id="demoNotice" style="display: none;">
+            <strong>🎬 Interactive Demo:</strong> This dashboard demonstrates the booking service UI with mock data. All features work - create bookings, run concurrency tests, view activity logs.
+            <br><br>
+            <strong>For Production:</strong> The backend uses Redis distributed locks + PostgreSQL transactions to prevent race conditions. 
+            <a href="https://github.com/yourusername/booking-service" target="_blank" style="color: var(--warning); text-decoration: underline;">View source code →</a>
+        </div>
+
+        <!-- Health Status -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h2>🏥 Service Health</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="healthStatus">-</div>
+                    <div class="stat-label">Status</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="responseTime">-</div>
+                    <div class="stat-label">Response Time</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="demoMode">🎬</div>
+                    <div class="stat-label">Mode</div>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                API Endpoint: <code id="apiEndpoint" style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 6px;">Checking...</code>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Create Booking -->
+            <div class="card">
+                <h2>➕ Create Booking</h2>
+                <div id="createAlert"></div>
+                <form id="createBookingForm">
+                    <div class="form-group">
+                        <label>Start Time</label>
+                        <input type="datetime-local" id="startTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Time</label>
+                        <input type="datetime-local" id="endTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="title" placeholder="Team Meeting" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Booking</button>
+                </form>
+            </div>
+
+            <!-- Concurrency Test -->
+            <div class="card concurrency-test">
+                <h2>⚡ Concurrency Test</h2>
+                <p style="margin-bottom: 1rem;">Send 10 simultaneous requests for the same time slot. Only 1 should succeed.</p>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="concurrentSuccess">0</div>
+                        <div class="stat-label">Success</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="concurrentFailed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="runConcurrencyTest()" id="concurrencyBtn">
+                    Run Test
+                </button>
+                <div class="progress-bar" style="display: none;" id="concurrencyProgress">
+                    <div class="progress-fill" style="width: 0%;" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="log-container">
+            <h2>📝 Activity Log</h2>
+            <div class="log" id="activityLog"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>Built with Node.js + PostgreSQL + Redis</p>
+        <p><a href="https://github.com/yourusername/booking-service" target="_blank">View Source Code →</a></p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
