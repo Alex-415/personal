@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cost Anomaly Detector — Al A</title>
+    <meta name="description" content="Production-ready AWS cost monitoring system built on Cloudflare Workers. Detects spending anomalies and sends alerts.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: #ffffff; padding: 1.5rem; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card h3 { font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase; }
+        .stat-card .value { font-size: 2rem; font-weight: 700; color: #2563eb; line-height: 1.2; }
+        .section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .section-title { font-size: 1.125rem; font-weight: 600; color: #1e293b; }
+        .btn { padding: 0.875rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.875rem; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .actions-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .chart-container { height: 320px; position: relative; background: #f8fafc; border-radius: 10px; }
+        .table-container { overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; background: #f1f5f9; }
+        td { font-size: 0.875rem; background: #ffffff; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-dod { background: rgba(217, 119, 6, 0.15); color: #d97706; }
+        .badge-wow { background: rgba(37, 99, 235, 0.15); color: #2563eb; }
+        .info-box { background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: #64748b; }
+        .demo-notice { background: rgba(217, 119, 6, 0.08); border: 1px solid rgba(217, 119, 6, 0.3); padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem; font-size: 0.875rem; }
+        .empty-state { text-align: center; padding: 3rem 1.5rem; color: #94a3b8; }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+        .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; color: #64748b; }
+        .spinner { width: 24px; height: 24px; border: 2px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.75rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .alert-banner { background: rgba(22, 163, 74, 0.08); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: none; align-items: center; gap: 0.75rem; font-size: 0.9rem; }
+        .alert-banner.show { display: flex; }
+        .alert-banner.warning { background: rgba(217, 119, 6, 0.08); border-color: rgba(217, 119, 6, 0.3); }
+        @media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; } .section-header { flex-direction: column; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">Al A</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="projects.html">Projects</a>
+                <a href="blog.html">Blog</a>
+                <a href="index.html#contact" class="nav-cta">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">AWS Cost Anomaly Detector</h1>
+                <p class="hero-subtitle">Production-ready AWS cost monitoring system built on Cloudflare Workers. Detects spending anomalies (>20% spikes), sends alerts via Slack/email, and provides real-time dashboards.</p>
+            </div>
+        </section>
+
+        <div class="container">
+            <div class="demo-notice">
+                <strong>🎬 Interactive Demo:</strong> This dashboard shows sample AWS cost data. In production, it connects to AWS Cost Explorer API via Cloudflare Workers backend with D1 database storage.
+            </div>
+
+            <div class="info-box">
+                <strong>📊 Dashboard Features:</strong>
+                View 30-day cost trends, detect anomalies with day-over-day and week-over-week analysis, track spending by AWS service, and configure Slack/email alerts.
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="dashboard">
+                <div class="stat-card">
+                    <h3>Total Spend (30 days)</h3>
+                    <div class="value" id="totalSpend">$1,247.83</div>
+                    <div class="change" id="totalSpendChange">Over 30 days</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Daily</h3>
+                    <div class="value" id="avgDaily">$41.59</div>
+                    <div class="change" id="avgDailyChange">Per day average</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Peak Daily</h3>
+                    <div class="value" id="peakDaily">$87.42</div>
+                    <div class="change" id="peakDailyDate">Jan 15, 2025</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Anomalies (7 days)</h3>
+                    <div class="value" id="anomalyCount">2</div>
+                    <div class="change" id="anomalyChange">Last 7 days</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Demo Actions</h2>
+                    <div class="actions-bar">
+                        <button class="btn btn-primary" onclick="simulateFetch()">📥 Fetch Costs</button>
+                        <button class="btn btn-secondary" onclick="simulateDetect()">🔍 Detect Anomalies</button>
+                        <button class="btn btn-secondary" onclick="simulateAlert()">📧 Send Alerts</button>
+                    </div>
+                </div>
+                <div id="actionStatus"></div>
+            </div>
+
+            <!-- Cost Trend Chart -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Cost Trend (30 days)</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Services -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Top Services by Cost</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Total Cost</th>
+                                <th>Days Active</th>
+                                <th>% of Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Amazon EC2</strong></td>
+                                <td>$523.45</td>
+                                <td>30</td>
+                                <td>41.9%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Amazon RDS</strong></td>
+                                <td>$312.18</td>
+                                <td>30</td>
+                                <td>25.0%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Amazon S3</strong></td>
+                                <td>$187.92</td>
+                                <td>30</td>
+                                <td>15.1%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>AWS Lambda</strong></td>
+                                <td>$124.67</td>
+                                <td>28</td>
+                                <td>10.0%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Amazon CloudFront</strong></td>
+                                <td>$99.61</td>
+                                <td>30</td>
+                                <td>8.0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Anomalies -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Anomalies</h2>
+                    <button class="btn btn-sm btn-secondary" onclick="simulateDetect()">🔄 Refresh</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Service</th>
+                                <th>Current</th>
+                                <th>Previous</th>
+                                <th>Spike</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Jan 15, 2025</td>
+                                <td><strong>Amazon EC2</strong></td>
+                                <td>$87.42</td>
+                                <td>$42.15</td>
+                                <td style="color: #dc2626;"><strong>+107.4%</strong></td>
+                                <td><span class="badge badge-dod">Day-over-Day</span></td>
+                                <td><span class="badge" style="background: rgba(22, 163, 74, 0.15); color: #16a34a;">Alerted</span></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 12, 2025</td>
+                                <td><strong>AWS Lambda</strong></td>
+                                <td>$12.84</td>
+                                <td>$5.92</td>
+                                <td style="color: #dc2626;"><strong>+116.9%</strong></td>
+                                <td><span class="badge badge-wow">Week-over-Week</span></td>
+                                <td><span class="badge" style="background: rgba(22, 163, 74, 0.15); color: #16a34a;">Alerted</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <section class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Technical Implementation</h2>
+                <div class="project-tags" style="justify-content: center; margin-bottom: 32px;">
+                    <span>Cloudflare Workers</span>
+                    <span>TypeScript</span>
+                    <span>Hono</span>
+                    <span>AWS Cost Explorer</span>
+                    <span>D1 Database</span>
+                    <span>Serverless</span>
+                </div>
+                <div style="max-width: 900px; margin: 0 auto; text-align: left;">
+                    <h3 style="margin-bottom: 16px;">Backend Architecture</h3>
+                    <ul style="line-height: 1.8; margin-bottom: 32px;">
+                        <li><strong>Cloudflare Workers:</strong> Serverless API deployed on Cloudflare's edge network for low-latency global access</li>
+                        <li><strong>Hono Framework:</strong> Lightweight, fast web framework optimized for Workers runtime</li>
+                        <li><strong>AWS Cost Explorer API:</strong> Fetches daily cost data grouped by service with proper credential management</li>
+                        <li><strong>D1 Database:</strong> SQLite-based serverless database for storing historical cost data and alert configurations</li>
+                        <li><strong>Anomaly Detection:</strong> Compares daily costs against previous day (DoD) and same day last week (WoW) to detect >20% spikes</li>
+                        <li><strong>Alert System:</strong> Supports Slack webhooks and SendGrid email for anomaly notifications</li>
+                    </ul>
+                    <h3 style="margin-bottom: 16px;">Key Features</h3>
+                    <ul style="line-height: 1.8;">
+                        <li>Real-time dashboard with Chart.js visualization</li>
+                        <li>Demo mode with sample data for testing without AWS credentials</li>
+                        <li>Hybrid demo/production mode switching</li>
+                        <li>API key authentication for secure access</li>
+                        <li>Scheduled daily cost fetching via Cron Triggers</li>
+                        <li>Top services breakdown with percentage calculations</li>
+                        <li>Configurable alert thresholds and destinations</li>
+                    </ul>
+                    <h3 style="margin-bottom: 16px; margin-top: 32px;">API Endpoints</h3>
+                    <ul style="line-height: 1.8;">
+                        <li><code>POST /api/keys</code> - Generate API key</li>
+                        <li><code>GET /api/costs/summary?days=30</code> - Get cost summary</li>
+                        <li><code>GET /api/costs/trend?days=30</code> - Get daily trend data</li>
+                        <li><code>POST /api/costs/fetch</code> - Fetch costs from AWS</li>
+                        <li><code>GET /api/anomalies?days=7</code> - Get detected anomalies</li>
+                        <li><code>POST /api/anomalies/detect</code> - Run anomaly detection</li>
+                        <li><code>POST /api/alerts/send</code> - Send pending alerts</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="project-detail">
+                    <h2>Overview</h2>
+                    <p>Production-ready AWS cost monitoring system that detects spending anomalies and sends alerts. Built on Cloudflare Workers with TypeScript, featuring serverless architecture, D1 database storage, and integration with AWS Cost Explorer API.</p>
+
+                    <h2>Key Features</h2>
+                    <ul>
+                        <li><strong>Anomaly Detection:</strong> Automatically detects >20% spending spikes using day-over-day and week-over-week analysis</li>
+                        <li><strong>Real-time Dashboard:</strong> Interactive Vue.js/Chart.js dashboard showing cost trends, top services, and anomalies</li>
+                        <li><strong>Alert System:</strong> Configurable Slack webhooks and SendGrid email notifications</li>
+                        <li><strong>Demo Mode:</strong> Try the dashboard with sample data before connecting AWS credentials</li>
+                        <li><strong>Serverless Architecture:</strong> Deployed on Cloudflare Workers for global low-latency access</li>
+                        <li><strong>D1 Database:</strong> Historical cost storage with scheduled daily updates</li>
+                    </ul>
+
+                    <h2>Tech Stack</h2>
+                    <div class="project-tags">
+                        <span>TypeScript</span>
+                        <span>Cloudflare Workers</span>
+                        <span>Hono</span>
+                        <span>AWS Cost Explorer</span>
+                        <span>D1 Database</span>
+                        <span>Chart.js</span>
+                        <span>Slack API</span>
+                        <span>SendGrid</span>
+                    </div>
+
+                    <div class="project-actions" style="margin-top: 32px;">
+                        <a href="projects.html" class="btn-secondary">← Back to Projects</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Mock cost data for 30 days
+        const mockCostData = [
+            { date: '2025-12-18', cost: 38.42 }, { date: '2025-12-19', cost: 41.15 },
+            { date: '2025-12-20', cost: 35.87 }, { date: '2025-12-21', cost: 39.24 },
+            { date: '2025-12-22', cost: 42.56 }, { date: '2025-12-23', cost: 38.91 },
+            { date: '2025-12-24', cost: 33.28 }, { date: '2025-12-25', cost: 29.45 },
+            { date: '2025-12-26', cost: 31.67 }, { date: '2025-12-27', cost: 36.82 },
+            { date: '2025-12-28', cost: 40.13 }, { date: '2025-12-29', cost: 43.75 },
+            { date: '2025-12-30', cost: 45.28 }, { date: '2025-12-31', cost: 48.91 },
+            { date: '2026-01-01', cost: 35.42 }, { date: '2026-01-02', cost: 39.87 },
+            { date: '2026-01-03', cost: 42.15 }, { date: '2026-01-04', cost: 44.63 },
+            { date: '2026-01-05', cost: 41.28 }, { date: '2026-01-06', cost: 38.74 },
+            { date: '2026-01-07', cost: 40.92 }, { date: '2026-01-08', cost: 43.18 },
+            { date: '2026-01-09', cost: 39.56 }, { date: '2026-01-10', cost: 37.84 },
+            { date: '2026-01-11', cost: 41.67 }, { date: '2026-01-12', cost: 52.84 },
+            { date: '2026-01-13', cost: 44.29 }, { date: '2026-01-14', cost: 42.15 },
+            { date: '2026-01-15', cost: 87.42 }, { date: '2026-01-16', cost: 45.73 }
+        ];
+
+        let trendChartInstance = null;
+
+        function renderChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: mockCostData.map(d => formatDate(d.date)),
+                    datasets: [{
+                        label: 'Daily Cost ($)',
+                        data: mockCostData.map(d => d.cost),
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#2563eb',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#f8fafc',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: (ctx) => '$' + ctx.parsed.y.toFixed(2)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(226, 232, 240, 0.5)', drawBorder: false },
+                            ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(226, 232, 240, 0.5)', drawBorder: false },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 11 },
+                                callback: (value) => '$' + value
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                }
+            });
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function showActionStatus(message, type = 'success') {
+            const status = document.getElementById('actionStatus');
+            const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌';
+            status.innerHTML = `<div class="alert-banner show ${type === 'warning' ? 'warning' : ''}" style="display: flex;">${icon} ${message}</div>`;
+            setTimeout(() => { status.innerHTML = ''; }, 5000);
+        }
+
+        function simulateFetch() {
+            const status = document.getElementById('actionStatus');
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Fetching costs from AWS Cost Explorer...</div>';
+            setTimeout(() => {
+                showActionStatus('Successfully fetched 30 days of cost data (Demo Mode)');
+                // Re-render chart with animation
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+                renderChart();
+            }, 1500);
+        }
+
+        function simulateDetect() {
+            const status = document.getElementById('actionStatus');
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing cost data for anomalies...</div>';
+            setTimeout(() => {
+                showActionStatus('2 anomalies detected in the last 7 days', 'warning');
+            }, 1500);
+        }
+
+        function simulateAlert() {
+            const status = document.getElementById('actionStatus');
+            status.innerHTML = '<div class="loading"><div class="spinner"></div>Sending alerts...</div>';
+            setTimeout(() => {
+                showActionStatus('2 alerts sent successfully via configured channels');
+            }, 1500);
+        }
+
+        // Initialize chart on page load
+        document.addEventListener('DOMContentLoaded', renderChart);
+    </script>
+</body>
+</html>
