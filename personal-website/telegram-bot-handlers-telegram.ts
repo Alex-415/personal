@@ -6,6 +6,7 @@ type Env = {
   DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   GEMINI_API_KEY: string;
+  GROQ_API_KEY?: string;
 };
 
 export async function handleTelegramWebhook(body: any, env: Env) {
@@ -30,12 +31,13 @@ export async function handleTelegramWebhook(body: any, env: Env) {
       searchResults = await searchWeb(userText);
     }
 
-    // Generate response using Gemini
+    // Generate response using Gemini (with Groq fallback)
     const botResponse = await generateResponse(
       userText,
       history,
       searchResults,
-      env.GEMINI_API_KEY
+      env.GEMINI_API_KEY,
+      env.GROQ_API_KEY
     );
 
     // Save to database
@@ -81,13 +83,14 @@ async function sendTelegramMessage(
   botToken: string
 ): Promise<void> {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const safeText = text.substring(0, 4096); // Telegram limit
+  
   await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: text,
-      parse_mode: 'Markdown',
+      text: safeText,
     }),
   });
 }

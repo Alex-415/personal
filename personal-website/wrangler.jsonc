@@ -19,7 +19,7 @@
   "env": {
     "production": {
       "name": "personal-website-production",
-      "route": "dev-al.com/*",
+      "route": "telegram.dev-al.com/*",
       "zone_id": "6f4e6adb4030ac590e93cb73816c7771",
       "d1_databases": [
         {

@@ -5,6 +5,7 @@ type Env = {
   DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   GEMINI_API_KEY: string;
+  GROQ_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();

@@ -4,6 +4,7 @@ type Env = {
   openclaw_db: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   GEMINI_API_KEY: string;
+  GROQ_API_KEY?: string;
 };
 
 type Message = {
@@ -58,14 +59,19 @@ app.post('/telegram-ai-researcher/webhook', async (c) => {
       history,
       researchFindings,
       sources,
-      geminiKey
+      geminiKey,
+      c.env.GROQ_API_KEY
     );
+
+    console.log('Generated response:', botResponse.substring(0, 100));
 
     // Save to database
     await saveChatMessage(db, userId, userText, botResponse);
 
     // Send response to Telegram
-    await sendTelegramMessage(chatId, botResponse, botToken);
+    console.log('Sending to Telegram, chatId:', chatId);
+    const sendResult = await sendTelegramMessage(chatId, botResponse, botToken);
+    console.log('Telegram send result:', sendResult);
 
     return c.json({ ok: true });
   } catch (error) {
@@ -226,9 +232,11 @@ async function generateContextualResponse(
   history: Message[],
   researchFindings: string,
   sources: string[],
-  geminiKey: string
+  geminiKey: string,
+  groqKey?: string
 ): Promise<string> {
   try {
+    // Try Gemini first
     const model = await getAvailableModel(geminiKey);
 
     const researchContext = researchFindings
@@ -256,38 +264,97 @@ async function generateContextualResponse(
       })),
     ];
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: contents,
-          generationConfig: {
-            maxOutputTokens: 1000,
-            temperature: 0.7,
+    try {
+      console.log('Attempting Gemini API...');
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: contents,
+            generationConfig: {
+              maxOutputTokens: 1000,
+              temperature: 0.7,
+            },
+          }),
+        }
+      );
+
+      const data = await response.json() as any;
+      console.log('Gemini response status:', response.status, 'data:', JSON.stringify(data).substring(0, 200));
+
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        let responseText = data.candidates[0].content.parts[0].text;
+
+        if (sources.length > 0) {
+          responseText += '\n\n📚 Sources:\n';
+          sources.slice(0, 3).forEach((source, i) => {
+            responseText += `${i + 1}. ${source}\n`;
+          });
+        }
+
+        return responseText;
+      }
+
+      if (data.error) {
+        throw new Error(`Gemini error: ${data.error.message}`);
+      }
+      throw new Error('No content in Gemini response');
+    } catch (geminiError) {
+      console.error('Gemini failed:', geminiError);
+      if (!groqKey) {
+        console.error('Groq key not configured');
+        return 'Sorry, I could not generate a response.';
+      }
+
+      // Fallback to Groq
+      try {
+        console.log('Attempting Groq API...');
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`,
           },
-        }),
-      }
-    );
-
-    const data = await response.json() as any;
-
-    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      let responseText = data.candidates[0].content.parts[0].text;
-
-      if (sources.length > 0) {
-        responseText += '\n\n📚 Sources:\n';
-        sources.slice(0, 3).forEach((source, i) => {
-          responseText += `${i + 1}. ${source}\n`;
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt,
+              },
+              {
+                role: 'user',
+                content: userQuery,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 1024,
+          }),
         });
+
+        const groqData = await groqResponse.json() as any;
+        console.log('Groq response status:', groqResponse.status);
+        console.log('Groq response data:', JSON.stringify(groqData));
+        const groqContent = groqData.choices?.[0]?.message?.content;
+
+        if (groqContent) {
+          let responseText = groqContent;
+          if (sources.length > 0) {
+            responseText += '\n\n📚 Sources:\n';
+            sources.slice(0, 3).forEach((source, i) => {
+              responseText += `${i + 1}. ${source}\n`;
+            });
+          }
+          return responseText;
+        }
+
+        throw new Error('No content in Groq response');
+      } catch (groqError) {
+        console.error('Groq also failed:', groqError);
+        return 'Sorry, both AI services are temporarily unavailable. Please try again later.';
       }
-
-      return responseText;
-    }
-
-    if (data.error) {
-      return `Error: ${data.error.message}`;
     }
 
     return 'Sorry, I could not generate a response.';
@@ -301,17 +368,58 @@ async function sendTelegramMessage(
   chatId: number,
   text: string,
   botToken: string
-): Promise<void> {
+): Promise<string> {
+  const maxLength = 4096;
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: text,
-      parse_mode: 'Markdown',
-    }),
-  });
+
+  if (text.length <= maxLength) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+      }),
+    });
+    const data = await response.json() as any;
+    console.log('Telegram response:', data);
+    return data.ok ? 'sent' : `error: ${data.description}`;
+  } else {
+    // Split long messages
+    const messages = [];
+    let currentMessage = '';
+
+    const paragraphs = text.split('\n\n');
+    for (const paragraph of paragraphs) {
+      if ((currentMessage + paragraph).length > maxLength) {
+        if (currentMessage) messages.push(currentMessage);
+        currentMessage = paragraph;
+      } else {
+        currentMessage += (currentMessage ? '\n\n' : '') + paragraph;
+      }
+    }
+    if (currentMessage) messages.push(currentMessage);
+
+    // Send each message with delay
+    for (const msg of messages) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: msg,
+        }),
+      });
+      const data = await response.json() as any;
+      console.log('Telegram response:', data);
+      if (!data.ok) {
+        return `error: ${data.description}`;
+      }
+      // Small delay between messages
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return 'sent';
+  }
 }
 
 app.all('*', (c) => {
