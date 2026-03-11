@@ -2,6 +2,9 @@ name = "openclaw-experience"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+route = "dev-al.com/telegram-ai-researcher/*"
+zone_id = "YOUR_ZONE_ID"
+
 [env.production]
 vars = { ENVIRONMENT = "production" }
 
