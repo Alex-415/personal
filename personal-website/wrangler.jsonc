@@ -5,10 +5,21 @@
   "observability": {
     "enabled": true
   },
-  "assets": {
-    "directory": "."
-  },
+  "main": "worker.ts",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "openclaw_db",
+      "database_name": "openclaw-db",
+      "database_id": "ab8d0c5b-a4d9-4cd7-9e6f-a9ed17e71891"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "dev-al.com/telegram-ai-researcher/*",
+      "zone_id": "6f4e6adb4030ac590e93cb73816c7771"
+    }
   ]
 }
