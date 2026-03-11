@@ -1,5 +1,0 @@
-[[redirects]]
-  from = "/telegram-ai-researcher/*"
-  to = "https://personal-website-production.workers.dev/telegram-ai-researcher/:splat"
-  status = 200
-  force = true
