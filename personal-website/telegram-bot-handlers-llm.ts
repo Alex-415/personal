@@ -125,22 +125,20 @@ Keep responses clear and under 4096 characters for Telegram compatibility.`;
 
   const userPrompt = `${contextText}${searchContext}\n\nCurrent question: ${userMessage}`;
 
-  const finalGroqKey = groqApiKey || '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';
-
   try {
     // Try Gemini first
     console.log('Attempting Gemini API...');
     return await callGemini(userPrompt, systemPrompt, apiKey);
   } catch (geminiError) {
     console.error('Gemini API failed:', geminiError);
-    if (!finalGroqKey) {
+    if (!groqApiKey) {
       console.error('Groq API key not configured');
       return 'I apologize, but I\'m currently unable to process your request. Both AI services are temporarily unavailable. Please try again in a moment.';
     }
     try {
       // Fallback to Groq
       console.log('Falling back to Groq API...');
-      return await callGroq(userPrompt, systemPrompt, finalGroqKey);
+      return await callGroq(userPrompt, systemPrompt, groqApiKey);
     } catch (groqError) {
       console.error('Groq API also failed:', groqError);
       return 'I apologize, but I\'m currently unable to process your request. Both AI services are temporarily unavailable. Please try again in a moment.';
