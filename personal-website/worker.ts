@@ -38,8 +38,8 @@ app.post('/telegram-ai-researcher/webhook', async (c) => {
       return c.json({ ok: false, error: 'Credentials not configured' }, 500);
     }
 
-    // Get conversation history
-    const history = await getChatHistory(db, userId, 5);
+    // Get conversation history (last 100 messages)
+    const history = await getChatHistory(db, userId, 100);
 
     // Perform research if needed
     const needsResearch = shouldResearch(userText);
@@ -86,6 +86,10 @@ async function getChatHistory(db: D1Database, userId: string, limit: number): Pr
       .bind(userId, limit)
       .all();
 
+    if (!result.results) {
+      return [];
+    }
+
     return (result.results as any[])
       .reverse()
       .map((row) => ({
@@ -105,6 +109,7 @@ async function saveChatMessage(
   assistantMessage: string
 ): Promise<void> {
   try {
+    // Save user message
     await db
       .prepare(
         `INSERT INTO chat_history (user_id, role, content, created_at) 
@@ -113,12 +118,28 @@ async function saveChatMessage(
       .bind(userId, 'user', userMessage)
       .run();
 
+    // Save assistant message
     await db
       .prepare(
         `INSERT INTO chat_history (user_id, role, content, created_at) 
          VALUES (?, ?, ?, datetime('now'))`
       )
       .bind(userId, 'assistant', assistantMessage)
+      .run();
+
+    // Keep only last 100 messages per user (cleanup old messages)
+    await db
+      .prepare(
+        `DELETE FROM chat_history 
+         WHERE user_id = ? 
+         AND id NOT IN (
+           SELECT id FROM chat_history 
+           WHERE user_id = ? 
+           ORDER BY created_at DESC 
+           LIMIT 100
+         )`
+      )
+      .bind(userId, userId)
       .run();
   } catch (error) {
     console.error('Error saving chat message:', error);
@@ -210,12 +231,6 @@ async function generateContextualResponse(
   try {
     const model = await getAvailableModel(geminiKey);
 
-    // Build context from history
-    const historyContext = history
-      .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n');
-
-    // Build research context
     const researchContext = researchFindings
       ? `\n\nRecent Research Findings:\n${researchFindings}`
       : '';
@@ -225,13 +240,20 @@ async function generateContextualResponse(
 2. Cite sources when providing information
 3. Maintain conversation context and remember previous discussions
 4. Synthesize information from multiple sources
-5. Be concise but thorough
+5. Be concise but thorough${researchContext}`;
 
-${researchContext}`;
-
-    const messages = [
-      ...history,
-      { role: 'user' as const, content: userQuery },
+    // Limit history to last 20 messages for API (to avoid token limits)
+    const recentHistory = history.slice(-20);
+    
+    const contents = [
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt + '\n\n' + userQuery }],
+      },
+      ...recentHistory.map((msg) => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      })),
     ];
 
     const response = await fetch(
@@ -240,11 +262,7 @@ ${researchContext}`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: systemPrompt,
-          contents: messages.map((msg) => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }],
-          })),
+          contents: contents,
           generationConfig: {
             maxOutputTokens: 1000,
             temperature: 0.7,
@@ -258,7 +276,6 @@ ${researchContext}`;
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       let responseText = data.candidates[0].content.parts[0].text;
 
-      // Add sources if available
       if (sources.length > 0) {
         responseText += '\n\n📚 Sources:\n';
         sources.slice(0, 3).forEach((source, i) => {
