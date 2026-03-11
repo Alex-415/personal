@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>openClaw experience — Al A</title>
+    <meta name="description" content="24/7 personal AI assistant on Telegram. Searches the web, summarizes content, and remembers conversation context. Built entirely on Cloudflare's free tier.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
+        .feature-card { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 4px solid #3b82f6; }
+        .feature-card h4 { margin: 0 0 10px 0; color: #1e293b; }
+        .feature-card p { margin: 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+        .tech-section { background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 20px 0; }
+        .tech-section h3 { margin-top: 0; color: #1e293b; }
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .tech-item { background: white; padding: 12px; border-radius: 8px; text-align: center; font-size: 14px; color: #64748b; border: 1px solid #e2e8f0; }
+        .code-block { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: 'Monaco', monospace; font-size: 13px; line-height: 1.5; margin: 15px 0; }
+        .highlight { background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">Al A</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="projects.html">Projects</a>
+                <a href="blog.html">Blog</a>
+                <a href="index.html#contact" class="nav-cta">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">openClaw experience</h1>
+                <p class="hero-subtitle">24/7 personal AI assistant on Telegram. Searches the web, summarizes content, and remembers conversation context. Built entirely on Cloudflare's free tier.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <h2>Overview</h2>
+                <p>A production-grade AI research assistant deployed as a Telegram bot. The bot runs 24/7 on Cloudflare Workers, uses Google Gemini for intelligence, stores conversation history in Cloudflare D1, and performs web searches via DuckDuckGo. Everything runs on free tiers with zero infrastructure costs.</p>
+
+                <h2 style="margin-top: 40px;">Key Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🤖 AI-Powered Responses</h4>
+                        <p>Uses Google Gemini 1.5 Flash for fast, intelligent responses to natural language queries.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌐 Web Search Integration</h4>
+                        <p>Automatically searches the web for current information when needed, with DuckDuckGo integration.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💾 Conversation Memory</h4>
+                        <p>Stores last 10 messages in Cloudflare D1 for context-aware responses across sessions.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚡ Serverless & Scalable</h4>
+                        <p>Runs on Cloudflare Workers with automatic scaling. No servers to manage, no cold starts.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔒 Secure & Private</h4>
+                        <p>Uses Worker Bindings for database access (no API keys exposed). All data encrypted in transit.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💰 Zero Cost</h4>
+                        <p>Runs entirely on free tiers: Cloudflare Workers, D1, Telegram Bot API, and Google Gemini free tier.</p>
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 40px;">Architecture</h2>
+                <div class="code-block">Telegram Bot API
+    ↓
+Cloudflare Worker (Webhook)
+    ├── ↔ Cloudflare D1 (Chat History)
+    ├── ↔ Google Gemini API (LLM)
+    └── ↔ DuckDuckGo Search (Web Results)
+                </div>
+
+                <h2 style="margin-top: 40px;">Tech Stack</h2>
+                <div class="tech-section">
+                    <h3>Backend & Infrastructure</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item">Cloudflare Workers</div>
+                        <div class="tech-item">TypeScript</div>
+                        <div class="tech-item">Hono Framework</div>
+                        <div class="tech-item">Cloudflare D1</div>
+                        <div class="tech-item">SQLite</div>
+                        <div class="tech-item">Telegram Bot API</div>
+                        <div class="tech-item">Google Gemini API</div>
+                        <div class="tech-item">DuckDuckGo Search</div>
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 40px;">How It Works</h2>
+                <ol style="line-height: 1.8; color: #475569;">
+                    <li><strong>User sends message to Telegram bot</strong> → Telegram forwards to Cloudflare Worker webhook</li>
+                    <li><strong>Worker retrieves conversation history</strong> → Queries last 10 messages from D1 database</li>
+                    <li><strong>Worker determines if web search needed</strong> → Analyzes query to decide if current info required</li>
+                    <li><strong>Optional web search</strong> → Fetches top 3 results from DuckDuckGo if needed</li>
+                    <li><strong>LLM processing</strong> → Sends query + context + search results to Google Gemini</li>
+                    <li><strong>Response generation</strong> → Gemini returns intelligent response</li>
+                    <li><strong>Store in database</strong> → Saves user message and bot response to D1</li>
+                    <li><strong>Send to Telegram</strong> → Returns response to user (within 30-second timeout)</li>
+                </ol>
+
+                <h2 style="margin-top: 40px;">Database Schema</h2>
+                <div class="code-block">CREATE TABLE chat_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  user_message TEXT NOT NULL,
+  bot_response TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_user_id ON chat_history(user_id);
+                </div>
+
+                <h2 style="margin-top: 40px;">Environment Variables</h2>
+                <div class="code-block">TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+GEMINI_API_KEY=your_google_gemini_api_key
+                </div>
+
+                <h2 style="margin-top: 40px;">Deployment Steps</h2>
+                <ol style="line-height: 1.8; color: #475569;">
+                    <li><strong>Create Cloudflare D1 database:</strong>
+                        <div class="code-block">wrangler d1 create telegram-bot-db</div>
+                    </li>
+                    <li><strong>Update wrangler.toml</strong> with the database ID from the output</li>
+                    <li><strong>Apply database schema:</strong>
+                        <div class="code-block">wrangler d1 execute telegram-bot-db --file=src/db/schema.sql</div>
+                    </li>
+                    <li><strong>Set environment variables</strong> in Cloudflare dashboard or .env file</li>
+                    <li><strong>Deploy Worker:</strong>
+                        <div class="code-block">wrangler deploy</div>
+                    </li>
+                    <li><strong>Set Telegram webhook</strong> to your Worker URL</li>
+                </ol>
+
+                <h2 style="margin-top: 40px;">Why This Stack?</h2>
+                <ul style="line-height: 1.8; color: #475569;">
+                    <li><span class="highlight">Cloudflare Workers</span> — Global edge network, instant scaling, no cold starts, free tier includes 100k requests/day</li>
+                    <li><span class="highlight">D1 Database</span> — Native Cloudflare database, Worker Bindings (no API keys), 5GB free storage, SQLite simplicity</li>
+                    <li><span class="highlight">Google Gemini</span> — Fast, free tier available, excellent for research tasks, no Elon Musk ties</li>
+                    <li><span class="highlight">Telegram Bot API</span> — Completely free, webhook-based (no polling), reliable infrastructure</li>
+                    <li><span class="highlight">DuckDuckGo</span> — No API key required, privacy-focused, good search results</li>
+                </ul>
+
+                <h2 style="margin-top: 40px;">Project Files</h2>
+                <div class="code-block">telegram-ai-researcher/
+├── wrangler.toml              # Cloudflare config + D1 binding
+├── package.json
+├── src/
+│   ├── index.ts               # Main Worker entry point
+│   ├── handlers/
+│   │   ├── telegram.ts        # Telegram webhook handler
+│   │   ├── llm.ts             # Gemini API integration
+│   │   └── search.ts          # DuckDuckGo search
+│   ├── db/
+│   │   ├── schema.sql         # D1 database schema
+│   │   └── queries.ts         # SQL query helpers
+│   └── utils/
+│       └── logger.ts          # Structured logging
+├── .env.example
+└── README.md
+                </div>
+
+                <h2 style="margin-top: 40px;">Limitations & Considerations</h2>
+                <ul style="line-height: 1.8; color: #475569;">
+                    <li><strong>30-second timeout:</strong> Telegram expects responses within 30 seconds. Complex queries may timeout.</li>
+                    <li><strong>Free tier limits:</strong> Google Gemini free tier has rate limits (~60 requests/minute)</li>
+                    <li><strong>D1 storage:</strong> 5GB free tier is sufficient for millions of text messages</li>
+                    <li><strong>Worker limits:</strong> 100k requests/day free tier (sufficient for personal use)</li>
+                    <li><strong>Search results:</strong> Limited to 3 results per search to stay within rate limits</li>
+                </ul>
+
+                <h2 style="margin-top: 40px;">Future Enhancements</h2>
+                <ul style="line-height: 1.8; color: #475569;">
+                    <li>Add image recognition capabilities</li>
+                    <li>Implement conversation summarization for long chats</li>
+                    <li>Add custom knowledge base integration</li>
+                    <li>Support for multiple Telegram users with separate contexts</li>
+                    <li>Analytics dashboard for usage tracking</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

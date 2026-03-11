@@ -1,0 +1,21 @@
+{
+  "name": "openclaw-experience",
+  "version": "1.0.0",
+  "description": "24/7 AI research assistant on Telegram powered by Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create openclaw-db",
+    "db:migrate": "wrangler d1 execute openclaw-db --file=src/db/schema.sql",
+    "db:query": "wrangler d1 execute openclaw-db"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240620.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.28.0"
+  }
+}
