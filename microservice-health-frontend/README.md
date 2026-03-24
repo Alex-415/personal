@@ -17,7 +17,7 @@ Vue.js dashboard for real-time microservice health monitoring.
 - Vue.js 3 (CDN)
 - Vanilla JavaScript
 - CSS3
-- Netlify deployment
+- Cloudflare Pages deployment
 
 ## Local Development
 
@@ -33,11 +33,11 @@ python -m http.server 3000
 
 Visit `http://localhost:3000`
 
-## Netlify Deployment
+## Cloudflare Pages Deployment
 
-### Option 1: Drag & Drop
-1. Go to [netlify.com](https://netlify.com)
-2. Drag the `microservice-health-frontend` folder to deploy
+### Option 1: Direct Upload
+1. Go to [Cloudflare Pages](https://pages.cloudflare.com)
+2. Upload the `microservice-health-frontend` folder to deploy
 
 ### Option 2: GitHub
 1. Push to GitHub:
@@ -50,11 +50,11 @@ git remote add origin YOUR_GITHUB_REPO_URL
 git push -u origin main
 ```
 
-2. On Netlify:
-   - Click "New site from Git"
+2. On Cloudflare Pages:
+   - Click "Create a project"
    - Connect GitHub repo
    - Build settings: (leave empty, it's static HTML)
-   - Click "Deploy site"
+   - Click "Save and Deploy"
 
 ### Step 3: Update API URL
 
@@ -64,7 +64,7 @@ After deploying backend to Render.com, update the API URL in `index.html`:
 apiUrl: 'https://YOUR-BACKEND.onrender.com'
 ```
 
-Redeploy to Netlify.
+Redeploy to Cloudflare Pages.
 
 ## Configuration
 

@@ -123,4 +123,4 @@ open http://localhost:3000
 
 - The current implementation uses PostgreSQL + Redis (not Cloudflare D1)
 - For full Cloudflare integration, you'd need to adapt the code to use D1 and KV
-- The UI is static and works on any static hosting (Pages, Netlify, Vercel)
+- The UI is static and works on any static hosting (Cloudflare Pages, Vercel)
