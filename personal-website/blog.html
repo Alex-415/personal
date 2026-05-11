@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building a Network Security Scanner — Al A</title>
-    <meta name="description" content="A behind the scenes look at creating a secure network port scanner with concurrent scanning and security protections.">
+    <title>Blog — Al A</title>
+    <meta name="description" content="Engineering case studies and technical articles by Al A.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -28,62 +28,40 @@
     <main>
         <section class="hero">
             <div class="container">
-                <h1 class="hero-title">Building a Network Security Scanner</h1>
-                <p class="hero-subtitle">Creating a secure port scanner with concurrent scanning and protection mechanisms</p>
+                <h1 class="hero-title">Blog</h1>
+                <p class="hero-subtitle">Engineering case studies, technical deep-dives, and reflections on building production software.</p>
             </div>
         </section>
 
         <section class="section">
             <div class="container">
-                <article class="blog-post">
-                    <div class="post-meta">
-                        <time datetime="2024-01-15">January 15, 2024</time>
-                        <span class="reading-time">5 min read</span>
-                    </div>
+                <div class="blog-list">
+                    <a href="blog-the-euroloop.html" class="blog-item">
+                        <div class="blog-item-meta">
+                            <time datetime="2025-03-05">March 5, 2025</time>
+                            <span>• 5 min read</span>
+                        </div>
+                        <h2 class="blog-item-title">AI-Driven Geospatial Matching (TheEuroLoop.com)</h2>
+                        <p class="blog-item-excerpt">Engineering a scalable urban-matching engine using LLMs and Incremental Static Regeneration (ISR) to deliver high-fidelity recommendations with sub-second latency.</p>
+                    </a>
 
-                    <div class="post-content">
-                        <p>I recently built a port scanner as part of learning more about network security. The project ended up being more interesting than I expected, mainly because of the security considerations around building a tool like this.</p>
+                    <a href="blog-sun-chasers.html" class="blog-item">
+                        <div class="blog-item-meta">
+                            <time datetime="2025-02-20">February 20, 2025</time>
+                            <span>• 6 min read</span>
+                        </div>
+                        <h2 class="blog-item-title">Engineering a High-Availability Flight Deal Engine (Sun-Chasers.ca)</h2>
+                        <p class="blog-item-excerpt">Building a proprietary Sun-Score™ algorithm and a multi-stream ingestion pipeline to bridge the gap between flight pricing and real-time weather context.</p>
+                    </a>
 
-                        <h2>The Goal</h2>
-                        <p>Port scanners check which ports are open on a target system. They're useful for security audits, troubleshooting network issues, or verifying firewall configurations. I wanted to build one that was fast but also secure enough that it couldn't be abused.</p>
-
-                        <h2>Technical Implementation</h2>
-                        <p>The scanner uses Python with FastAPI for the backend and asyncio for handling multiple connections simultaneously. Sequential port scanning is slow—checking ports one at a time means waiting for each timeout. With asyncio, I can check 100 ports concurrently, which speeds things up significantly.</p>
-
-                        <p>The tricky part was managing those concurrent connections. I used a semaphore to limit how many connections can run at once. This prevents overwhelming the target system and also keeps resource usage reasonable on the scanning side.</p>
-
-                        <h2>Security Considerations</h2>
-                        <p>The biggest concern with any network scanning tool is SSRF (Server-Side Request Forgery). Without proper validation, someone could use the scanner to probe internal networks or localhost.</p>
-
-                        <p>To prevent this, I validate both the hostname and the resolved IP address. Just blocking private IP ranges like 192.168.x.x isn't enough—attackers can register domains that resolve to internal addresses. The scanner checks the resolved IP before making any connection attempts.</p>
-
-                        <p>I also added rate limiting to prevent abuse and ensure the tool can't be used to flood targets with requests.</p>
-
-                        <h2>Challenges</h2>
-                        <p>Getting the concurrency right took some trial and error. Too few concurrent connections and scans are slow. Too many and you risk hitting system limits or overwhelming targets. I settled on 100 concurrent connections as a reasonable default.</p>
-
-                        <p>Network operations are inherently unreliable. Connections time out, get refused, or fail for various reasons. Handling these errors gracefully without crashing the entire scan required careful error handling throughout the code.</p>
-
-                        <h2>Use Cases</h2>
-                        <p>This scanner works well for:</p>
-                        <ul>
-                            <li>Security teams conducting authorized penetration tests</li>
-                            <li>System administrators verifying firewall rules</li>
-                            <li>Developers checking service accessibility during deployment</li>
-                        </ul>
-
-                        <h2>What I Learned</h2>
-                        <p>This project reinforced that security features need to be built in from the start, not added as an afterthought. It also gave me hands-on experience with Python's asyncio, which behaves differently than I initially expected.</p>
-
-                        <p>The code is available on GitHub if you're interested. It's MIT licensed, so feel free to use or modify it for your own projects.</p>
-
-                        <p>Try out the <a href="network-scanner.html">Network Inspection Platform</a> to see how concurrent scanning works in practice. The scanner demonstrates how to balance performance with security in a production-grade tool.</p>
-                    </div>
-                </article>
-
-                <div class="post-navigation">
-                    <a href="index.html" class="btn-secondary">← Back to Home</a>
-                    <a href="projects.html" class="btn-secondary">View Projects →</a>
+                    <a href="blog-network-scanner.html" class="blog-item">
+                        <div class="blog-item-meta">
+                            <time datetime="2024-01-15">January 15, 2024</time>
+                            <span>• 5 min read</span>
+                        </div>
+                        <h2 class="blog-item-title">Building a Network Security Scanner</h2>
+                        <p class="blog-item-excerpt">A behind-the-scenes look at creating a secure, concurrent TCP port scanner with Python asyncio and robust SSRF protection mechanisms.</p>
+                    </a>
                 </div>
             </div>
         </section>
