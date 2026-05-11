@@ -241,6 +241,18 @@ body {
     margin-bottom: 16px;
 }
 
+.project-card ul {
+    margin-bottom: 16px;
+    padding-left: 20px;
+}
+
+.project-card li {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
 .project-tags {
     display: flex;
     flex-wrap: wrap;

@@ -42,6 +42,48 @@
                 <h2 class="section-title">Projects</h2>
                 <div class="projects-grid">
                     <div class="project-card">
+                        <h3>Sun-Chasers.ca | Flight Deal Platform | 2025 – Present</h3>
+                        <ul>
+                            <li>Built bilingual (EN/FR) flight deal platform covering 9 Canadian hubs (YOW, YYZ, YUL, YVR, YYC, YEG, YHZ, YWG, YQR) with i18n routing and hreflang SEO</li>
+                            <li>Engineered proprietary Sun-Score algorithm combining real-time weather data (temperature, conditions, timezone delta) into normalized destination ranking system</li>
+                            <li>Implemented multi-source flight data ingestion via Duffel and Kiwi APIs with price-change detection, baseline comparison, and deal classification</li>
+                            <li>Built automated social publishing pipeline distributing live deals to Bluesky, Mastodon, and Pinterest via cron jobs (3 posts/day average)</li>
+                            <li>Integrated Schema.org structured data (ItemList + Offer types) and canonical/hreflang tags for programmatic SEO across 500+ route combinations</li>
+                            <li>Shipped email alert subscription system with per-hub preferences serving 2K+ subscribers and push notification infrastructure</li>
+                        </ul>
+                        <div class="project-tags">
+                            <span>Next.js</span>
+                            <span>TypeScript</span>
+                            <span>Cloudflare Workers</span>
+                            <span>D1 Database</span>
+                            <span>i18n</span>
+                            <span>SEO</span>
+                            <span>Duffel API</span>
+                        </div>
+                        <a href="https://sun-chasers.ca" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="margin-top: 16px; display: inline-block;">Visit Sun-Chasers.ca →</a>
+                    </div>
+                    <div class="project-card">
+                        <h3>TheEuroLoop.com | AI Travel Assistant | 2025 – Present</h3>
+                        <ul>
+                            <li>Developed AI-assisted city-matching engine using LLM APIs (OpenAI) with serverless route planning achieving sub-second mobile load times</li>
+                            <li>Implemented conversational interface for personalized travel recommendations based on user preferences and constraints</li>
+                            <li>Built platform matching 200+ North American cities to European doppelgangers using proprietary AI scoring</li>
+                            <li>Automated content generation via cron - adds new cities every 2 days with AI-generated descriptions</li>
+                            <li>Implemented multi-tier AI fallback chain (Gemini, OpenRouter, Groq) with graceful degradation for rate limits</li>
+                            <li>ISR (24h revalidation) for static city pages - scales automatically as new cities are added</li>
+                            <li>Live product serving North American (primarily US) users</li>
+                        </ul>
+                        <div class="project-tags">
+                            <span>Next.js</span>
+                            <span>OpenAI</span>
+                            <span>AI</span>
+                            <span>Edge Functions</span>
+                            <span>ISR</span>
+                            <span>TypeScript</span>
+                        </div>
+                        <a href="https://theeuroloop.com" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="margin-top: 16px; display: inline-block;">Visit TheEuroLoop.com →</a>
+                    </div>
+                    <div class="project-card">
                         <h3>AWS Cost Anomaly Detector</h3>
                         <p>Production-ready AWS cost monitoring system built on Cloudflare Workers. Detects spending anomalies (>20% spikes), sends alerts via Slack/email, and provides real-time dashboards. Features hybrid demo/production mode, D1 database storage, and scheduled daily cost fetching. Demonstrates full-stack development with serverless architecture, API design, and cloud-native patterns.</p>
                         <div class="project-tags">

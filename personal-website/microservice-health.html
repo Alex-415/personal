@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservice Health Simulator — Al A</title>
+    <meta name="description" content="Real-time distributed system monitoring with failure simulation and WebSocket streaming.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <style>
+        .header-content { text-align: center; margin-bottom: 30px; }
+        .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+        .btn-demo { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-demo-primary { background: #3b82f6; color: white; }
+        .btn-demo-primary:hover { background: #2563eb; }
+        .btn-demo-danger { background: #ef4444; color: white; }
+        .btn-demo-danger:hover { background: #dc2626; }
+        .btn-demo-success { background: #10b981; color: white; }
+        .btn-demo-success:hover { background: #059669; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .status-healthy { background: #10b981; color: white; }
+        .status-degraded { background: #f59e0b; color: white; }
+        .status-failing { background: #ef4444; color: white; }
+        .status-sleeping { background: #6366f1; color: white; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .metric-card { background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+        .metric-label { color: #64748b; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+        .metric-value { font-size: 28px; font-weight: 700; color: #2563eb; }
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .service-card { background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .service-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+        .service-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .service-name { font-size: 18px; font-weight: 600; color: #1e293b; }
+        .service-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .service-metric { background: #f1f5f9; padding: 10px; border-radius: 6px; }
+        .service-metric-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+        .service-metric-value { font-size: 16px; font-weight: 600; color: #1e293b; }
+        .dependencies { margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+        .dependencies-label { font-size: 11px; color: #64748b; margin-bottom: 6px; }
+        .dep-tag { display: inline-block; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px; margin-bottom: 4px; color: #64748b; }
+        .error-message { background: #fee2e2; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca; text-align: center; }
+        .wake-info { background: #dbeafe; color: #1e40af; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #bfdbfe; font-size: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">Al A</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="projects.html">Projects</a>
+                <a href="blog.html">Blog</a>
+                <a href="index.html#contact" class="nav-cta">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="app">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Microservice Health Simulator</h1>
+                <p class="hero-subtitle">Real-time distributed system monitoring with failure simulation and WebSocket streaming. Simulates interconnected microservices to demonstrate failure propagation and system resilience.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="controls">
+                    <button @click="wakeUpServer" :disabled="waking" class="btn-demo btn-demo-success">
+                        <span v-if="waking" class="spinner"></span>
+                        {{ waking ? 'Waking Up Server...' : '⚡ Wake Up Server (Render.com)' }}
+                    </button>
+                    <button @click="fetchServices" :disabled="loading" class="btn-demo btn-demo-primary">
+                        <span v-if="loading" class="spinner"></span>
+                        {{ loading ? 'Loading...' : '🔄 Refresh Metrics' }}
+                    </button>
+                    <button @click="toggleAutoRefresh" class="btn-demo btn-demo-primary">
+                        {{ autoRefresh ? '⏸ Stop Auto-Refresh' : '▶️ Auto-Refresh' }}
+                    </button>
+                </div>
+
+                <div v-if="serverSleeping" class="wake-info">
+                    ⚠️ Server may be sleeping (Render.com free tier). Click "Wake Up Server" to start it (takes ~30-60 seconds).
+                </div>
+
+                <div v-if="error" class="error-message">{{ error }}</div>
+
+                <div v-if="metrics" class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Requests</div>
+                        <div class="metric-value">{{ metrics.total_requests }}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Errors</div>
+                        <div class="metric-value" style="color: #ef4444;">{{ metrics.total_errors }}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Latency</div>
+                        <div class="metric-value">{{ metrics.avg_latency_ms }}ms</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Healthy Services</div>
+                        <div class="metric-value" style="color: #10b981;">{{ metrics.healthy_services }}/{{ metrics.services_count }}</div>
+                    </div>
+                </div>
+
+                <div v-if="services.length" class="services-grid">
+                    <div v-for="service in services" :key="service.service_id" class="service-card">
+                        <div class="service-header">
+                            <div class="service-name">{{ service.service_id }}</div>
+                            <span :class="['status-badge', `status-${service.status}`]">
+                                {{ service.status.toUpperCase() }}
+                            </span>
+                        </div>
+                        
+                        <div class="service-metrics">
+                            <div class="service-metric">
+                                <div class="service-metric-label">Latency</div>
+                                <div class="service-metric-value">{{ service.latency_ms }}ms</div>
+                            </div>
+                            <div class="service-metric">
+                                <div class="service-metric-label">Error Rate</div>
+                                <div class="service-metric-value" :style="{color: service.error_rate > 20 ? '#ef4444' : '#10b981'}">
+                                    {{ service.error_rate }}%
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="simulateFailure(service.service_id)" class="btn-demo btn-demo-danger" style="width: 100%;">
+                            💥 Simulate Failure (30s)
+                        </button>
+
+                        <div v-if="dependencies[service.service_id]?.length" class="dependencies">
+                            <div class="dependencies-label">Dependencies:</div>
+                            <span v-for="dep in dependencies[service.service_id]" :key="dep" class="dep-tag">
+                                {{ dep }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Technical Implementation</h2>
+                <div class="project-tags" style="justify-content: center; margin-bottom: 32px;">
+                    <span>Python 3.11</span>
+                    <span>FastAPI</span>
+                    <span>asyncio</span>
+                    <span>WebSockets</span>
+                    <span>Vue.js</span>
+                    <span>Docker</span>
+                    <span>Render.com</span>
+                </div>
+                <div style="max-width: 800px; margin: 0 auto; text-align: left;">
+                    <h3 style="margin-bottom: 16px;">System Architecture</h3>
+                    <ul style="line-height: 1.8; margin-bottom: 32px;">
+                        <li><strong>Distributed Simulation:</strong> Simulates 9 interconnected microservices with unique error profiles and latency characteristics</li>
+                        <li><strong>Asynchronous Core:</strong> Built with Python's <code>asyncio</code> to handle hundreds of simulated requests per second concurrently</li>
+                        <li><strong>Failure Propagation:</strong> Demonstrates how a failure in a downstream service (e.g., Database) impacts upstream services (e.g., API Gateway)</li>
+                        <li><strong>Real-time Updates:</strong> Metrics are streamed via WebSockets or polled via REST API for live dashboard updates</li>
+                        <li><strong>Containerization:</strong> Entire system is Dockerized for consistent deployment across environments</li>
+                    </ul>
+                    <h3 style="margin-bottom: 16px;">Key Features</h3>
+                    <ul style="line-height: 1.8;">
+                        <li>Interactive failure simulation to test system resilience</li>
+                        <li>Dynamic dependency mapping and health tracking</li>
+                        <li>Latency and error rate visualization</li>
+                        <li>Automatic recovery after simulated failure duration</li>
+                        <li>Serverless-ready API design with FastAPI</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    apiUrl: 'https://microservice-health.onrender.com',
+                    services: [],
+                    dependencies: {},
+                    metrics: null,
+                    loading: false,
+                    waking: false,
+                    error: null,
+                    autoRefresh: false,
+                    refreshInterval: null,
+                    serverSleeping: false
+                };
+            },
+            mounted() {
+                this.checkServerStatus();
+            },
+            beforeUnmount() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                }
+            },
+            methods: {
+                async checkServerStatus() {
+                    try {
+                        const response = await fetch(`${this.apiUrl}/health`, { 
+                            signal: AbortSignal.timeout(5000) 
+                        });
+                        if (response.ok) {
+                            this.serverSleeping = false;
+                            this.fetchServices();
+                        }
+                    } catch (err) {
+                        this.serverSleeping = true;
+                        this.error = 'Server is not responding. Click "Wake Up Server" to start it.';
+                    }
+                },
+                async wakeUpServer() {
+                    this.waking = true;
+                    this.error = null;
+                    this.serverSleeping = false;
+                    
+                    try {
+                        const response = await fetch(`${this.apiUrl}/health`, {
+                            signal: AbortSignal.timeout(60000)
+                        });
+                        
+                        if (response.ok) {
+                            this.error = null;
+                            await this.fetchServices();
+                        }
+                    } catch (err) {
+                        this.error = 'Failed to wake up server. Please try again or check the URL.';
+                        this.serverSleeping = true;
+                    } finally {
+                        this.waking = false;
+                    }
+                },
+                async fetchServices() {
+                    this.loading = true;
+                    this.error = null;
+                    
+                    try {
+                        const [servicesRes, metricsRes] = await Promise.all([
+                            fetch(`${this.apiUrl}/services`),
+                            fetch(`${this.apiUrl}/metrics`)
+                        ]);
+
+                        if (!servicesRes.ok || !metricsRes.ok) {
+                            throw new Error('Failed to fetch data');
+                        }
+
+                        const servicesData = await servicesRes.json();
+                        this.services = servicesData.services;
+                        this.dependencies = servicesData.dependencies;
+                        this.metrics = await metricsRes.json();
+                        this.serverSleeping = false;
+                    } catch (err) {
+                        this.error = `Error: ${err.message}. Server may be sleeping.`;
+                        this.serverSleeping = true;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async simulateFailure(serviceId) {
+                    try {
+                        const response = await fetch(`${this.apiUrl}/simulate-failure`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ service_id: serviceId, duration_seconds: 30 })
+                        });
+
+                        if (response.ok) {
+                            setTimeout(() => this.fetchServices(), 1000);
+                        }
+                    } catch (err) {
+                        this.error = `Failed to simulate failure: ${err.message}`;
+                    }
+                },
+                toggleAutoRefresh() {
+                    this.autoRefresh = !this.autoRefresh;
+                    
+                    if (this.autoRefresh) {
+                        this.fetchServices();
+                        this.refreshInterval = setInterval(() => {
+                            this.fetchServices();
+                        }, 3000);
+                    } else {
+                        if (this.refreshInterval) {
+                            clearInterval(this.refreshInterval);
+                            this.refreshInterval = null;
+                        }
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
