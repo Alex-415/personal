@@ -31,3 +31,10 @@ Temporary Items
 
 # Personal files
 resume_Al_A.txt
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
